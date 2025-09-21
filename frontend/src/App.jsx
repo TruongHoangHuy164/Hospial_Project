@@ -8,19 +8,20 @@ import Services from './components/Services'
 import Highlights from './components/Highlights'
 import Notices from './components/Notices'
 import AppointmentCTA from './components/AppointmentCTA'
-import Login from './pages/Login'
-import Register from './pages/Register'
-import ForgotPassword from './pages/ForgotPassword'
-import ResetPassword from './pages/ResetPassword'
+import Login from './pages/auth/Login'
+import Register from './pages/auth/Register'
+import ForgotPassword from './pages/auth/ForgotPassword'
+import ResetPassword from './pages/auth/ResetPassword'
 import Footer from './components/Footer'
+import RequireAdmin from './pages/admin/RequireAdmin'
+import AdminLayout from './pages/admin/Layout'
+import Overview from './pages/admin/Overview'
+import SiteLayout from './layouts/SiteLayout'
 
 export default function App() {
   return (
-    <>
-      <Topbar />
-      <Header />
-      <Navbar />
-      <Routes>
+    <Routes>
+      <Route element={<SiteLayout />}>
         <Route path="/" element={
           <>
             <HeroSlider />
@@ -36,8 +37,11 @@ export default function App() {
         <Route path="/register" element={<Register />} />
         <Route path="/forgot" element={<ForgotPassword />} />
         <Route path="/reset" element={<ResetPassword />} />
-      </Routes>
-      <Footer />
-    </>
+      </Route>
+
+      <Route path="/admin" element={<RequireAdmin><AdminLayout /></RequireAdmin>}>
+        <Route path="overview" element={<Overview />} />
+      </Route>
+    </Routes>
   )
 }

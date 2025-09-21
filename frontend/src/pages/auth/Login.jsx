@@ -1,20 +1,24 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../../context/AuthContext';
 
 export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const navigate = useNavigate();
-
   const { signIn } = useAuth();
+
   const onSubmit = async (e) => {
     e.preventDefault();
     setError('');
     try {
-      await signIn(email, password);
-      navigate('/');
+      const u = await signIn(email, password);
+      if (u?.role === 'admin') {
+        navigate('/admin/overview');
+      } else {
+        navigate('/');
+      }
     } catch (err) {
       setError(err?.message || 'Đăng nhập thất bại');
     }

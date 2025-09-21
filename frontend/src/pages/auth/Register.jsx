@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../../context/AuthContext';
 
 export default function Register() {
   const [name, setName] = useState('');
@@ -8,14 +8,18 @@ export default function Register() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const navigate = useNavigate();
-
   const { signUp } = useAuth();
+
   const onSubmit = async (e) => {
     e.preventDefault();
     setError('');
     try {
-      await signUp(name, email, password);
-      navigate('/');
+      const u = await signUp(name, email, password);
+      if (u?.role === 'admin') {
+        navigate('/admin/overview');
+      } else {
+        navigate('/');
+      }
     } catch (err) {
       setError(err?.message || 'Đăng ký thất bại');
     }

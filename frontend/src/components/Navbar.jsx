@@ -14,6 +14,9 @@ export default function Navbar() {
         <Link to="#" className="nav__item"><i className="bi bi-clipboard-check"></i> Hướng dẫn khám</Link>
         <Link to="#" className="nav__item"><i className="bi bi-envelope"></i> Liên hệ</Link>
         <span className="flex-spacer" style={{ flex: 1 }} />
+        {isAuthenticated && user?.role === 'admin' && (
+          <Link to="/admin/overview" className="nav__item"><i className="bi bi-speedometer2"></i> Admin</Link>
+        )}
         {!isAuthenticated ? (
           <>
             <Link to="/login" className="nav__item"><i className="bi bi-box-arrow-in-right"></i> Đăng nhập</Link>
