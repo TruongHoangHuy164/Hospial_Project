@@ -15,6 +15,7 @@ app.get('/', (req, res) => {
 });
 
 app.use('/health', require('./routes/health'));
+app.use('/api/patients', require('./routes/patients'));
 
 app.use(notFound);
 app.use(errorHandler);

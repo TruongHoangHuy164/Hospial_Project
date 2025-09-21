@@ -14,7 +14,7 @@ export default function Notices() {
       </div>
       <ul className="notices">
         {notices.map(n => (
-          <li key={n.id} className="notice">{n.text}</li>
+          <li key={n.id} className="notice"><i className="bi bi-exclamation-circle text-warning"></i> {n.text}</li>
         ))}
       </ul>
     </section>

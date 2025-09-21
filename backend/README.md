@@ -22,6 +22,29 @@ npm install
 npm run dev
 ```
 
+## MongoDB
+
+Set `MONGODB_URI` in `.env`, e.g.:
+
+```
+MONGODB_URI=mongodb://127.0.0.1:27017/hospital_demo
+```
+
+Start local MongoDB (example, if you have MongoDB installed):
+
+```
+mongod --dbpath "C:\\data\\db"
+```
+
+Health check will include DB status at `GET /health`:
+
+```
+{
+	"status": "up",
+	"db": "connected"
+}
+```
+
 ## Endpoints
 
 - `GET /` – base info

@@ -17,7 +17,7 @@ export default function Highlights() {
         {highlights.map(h => (
           <article key={h.id} className="card">
             <div className="card__thumb" />
-            <h3 className="card__title">{h.title}</h3>
+            <h3 className="card__title"><i className="bi bi-stars"></i> {h.title}</h3>
           </article>
         ))}
       </div>

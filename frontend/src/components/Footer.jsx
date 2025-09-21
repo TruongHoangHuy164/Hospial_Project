@@ -6,8 +6,8 @@ export default function Footer() {
       <div className="container footer__grid">
         <div>
           <div className="footer__brand">Bệnh viện Demo</div>
-          <p>215 Đường Ví dụ, Quận 5, TP.HCM</p>
-          <p>Tel: (028) 1234 5678 • Email: contact@hospital.demo</p>
+          <p>Thủ Đức, TP.HCM</p>
+          <p>Tel: 0932961658 • Email: truonghoanghuy164@gmail.com</p>
         </div>
         <div>
           <h4>Liên kết</h4>
@@ -26,7 +26,7 @@ export default function Footer() {
           </div>
         </div>
       </div>
-      <div className="footer__note">© 2025 Bệnh viện Demo. UI tham khảo bố cục bvchoray.vn.</div>
+      <div className="footer__note">© 2025 Bệnh viện Demo. </div>
     </footer>
   )
 }

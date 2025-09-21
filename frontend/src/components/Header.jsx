@@ -11,11 +11,14 @@ export default function Header() {
         </div>
       </a>
       <div className="header__search">
-        <input className="search" placeholder="Tìm bác sĩ, dịch vụ..." />
+        <div className="input-group">
+          <span className="input-group-text bg-white"><i className="bi bi-search"></i></span>
+          <input className="form-control" placeholder="Tìm bác sĩ, dịch vụ..." />
+        </div>
       </div>
       <div className="header__cta">
-        <a className="btn btn--primary" href="#">Đặt lịch khám</a>
-        <a className="btn btn--outline" href="tel:02812345678">Gọi: (028) 1234 5678</a>
+  <a className="btn btn--primary" href="#"><i className="bi bi-calendar2-check"></i> Đặt lịch khám</a>
+  <a className="btn btn--outline" href="tel:02812345678"><i className="bi bi-telephone"></i> Gọi: (028) 1234 5678</a>
       </div>
     </header>
   )
