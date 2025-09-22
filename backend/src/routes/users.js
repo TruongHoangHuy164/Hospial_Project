@@ -43,3 +43,32 @@ router.get('/', async (req, res, next) => {
 });
 
 module.exports = router;
+
+// PATCH /api/users/:id/role
+router.patch('/:id/role', async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { role } = req.body || {};
+
+    const allowed = ['user', 'doctor', 'admin'];
+    if (!allowed.includes(role)) {
+      return res.status(400).json({ message: 'Vai trò không hợp lệ' });
+    }
+
+    // Optional safety: prevent current admin from demoting themselves to avoid lockout
+    if (req.user && req.user.id === id && req.user.role === 'admin' && role !== 'admin') {
+      return res.status(400).json({ message: 'Không thể tự hạ quyền chính mình' });
+    }
+
+    const user = await User.findByIdAndUpdate(
+      id,
+      { $set: { role } },
+      { new: true, projection: '-password -resetPasswordToken -resetPasswordExpires -refreshTokenIds' }
+    );
+    if (!user) return res.status(404).json({ message: 'Không tìm thấy người dùng' });
+
+    return res.json({ message: 'Cập nhật vai trò thành công', user });
+  } catch (err) {
+    return next(err);
+  }
+});

@@ -17,6 +17,9 @@ export default function AdminLayout() {
             <Link to="/" className="navbar-brand my-3"><i className="bi bi-hospital"></i> Hospital</Link>
             <ul className="nav nav-pills flex-column mb-auto w-100">
               <li className="nav-item"><Link to="/admin/overview" className="nav-link">Tổng quan</Link></li>
+              <li className="nav-item"><Link to="/admin/users" className="nav-link">Quản lý người dùng</Link></li>
+              <li className="nav-item"><Link to="/admin/doctors" className="nav-link">Quản lý bác sĩ</Link></li>
+              <li className="nav-item"><Link to="/admin/clinics" className="nav-link">Quản lý chuyên khoa & phòng khám</Link></li>
               <li className="nav-item mt-2"><button className="btn btn-outline-secondary w-100" onClick={onLogout}><i className="bi bi-box-arrow-right"></i> Đăng xuất</button></li>
             </ul>
           </div>

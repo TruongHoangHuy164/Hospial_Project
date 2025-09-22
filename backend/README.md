@@ -93,3 +93,46 @@ JWT_EXPIRES_IN=7d
 JWT_REFRESH_SECRET=change_this_refresh_secret
 REFRESH_TOKEN_EXPIRES_IN=30d
 ```
+
+## Mini Clinic Database (7-step workflow)
+
+Collections and relations:
+
+- `BenhNhan` (patient)
+	- Fields: `hoTen, ngaySinh, gioiTinh(nam|nu|khac), diaChi, soDienThoai`
+	- Relations: 1–n with `SoThuTu`, 1–1 or 1–n with `BHYT`, 1–n with `HoSoKham`
+
+- `SoThuTu` (queue ticket)
+	- Fields: `benhNhanId -> BenhNhan, soThuTu, thoiGianDangKy, trangThai(dang_cho|da_goi|da_kham)`
+
+- `BHYT` (health insurance)
+	- Fields: `benhNhanId -> BenhNhan, maTheBHYT(unique), ngayBatDau, ngayHetHan, giayChuyenVien(boolean)`
+
+- `PhongKham` (clinic room)
+	- Fields: `tenPhong, chuyenKhoa`
+	- Relations: 1–n with `BacSi`
+
+- `BacSi` (doctor)
+	- Fields: `hoTen, chuyenKhoa, phongKhamId -> PhongKham`
+
+- `HoSoKham` (visit/encounter)
+	- Fields: `benhNhanId -> BenhNhan, bacSiId -> BacSi, ngayKham, chanDoan, huongDieuTri(ngoai_tru|noi_tru|chuyen_vien|ke_don)`
+	- Relations: 1–n with `CanLamSang`, `DonThuoc`, `ThanhToan`
+
+- `CanLamSang` (para-clinical order)
+	- Fields: `hoSoKhamId -> HoSoKham, loaiChiDinh(xet_nghiem|sieu_am|x_quang|ct|mri|dien_tim|noi_soi), ketQua, ngayThucHien`
+
+- `ThanhToan` (payment)
+	- Fields: `hoSoKhamId -> HoSoKham, soTien, hinhThuc(BHYT|tien_mat), ngayThanhToan`
+
+- `DonThuoc` (prescription)
+	- Fields: `hoSoKhamId -> HoSoKham, ngayKeDon`
+	- Relations: 1–n with `CapThuoc`
+
+- `Thuoc` (drug)
+	- Fields: `tenThuoc, donViTinh, huongDanSuDung`
+
+- `CapThuoc` (dispense)
+	- Fields: `donThuocId -> DonThuoc, thuocId -> Thuoc, soLuong`
+
+All schemas are defined under `src/models` with Mongoose refs and helpful indexes.

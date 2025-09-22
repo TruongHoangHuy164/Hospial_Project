@@ -16,6 +16,9 @@ import Footer from './components/Footer'
 import RequireAdmin from './pages/admin/RequireAdmin'
 import AdminLayout from './pages/admin/Layout'
 import Overview from './pages/admin/Overview'
+import Users from './pages/admin/Users'
+import Doctors from './pages/admin/doctor/Index'
+import Clinics from './pages/admin/clinic/Index'
 import SiteLayout from './layouts/SiteLayout'
 
 export default function App() {
@@ -41,6 +44,9 @@ export default function App() {
 
       <Route path="/admin" element={<RequireAdmin><AdminLayout /></RequireAdmin>}>
         <Route path="overview" element={<Overview />} />
+        <Route path="users" element={<Users />} />
+        <Route path="doctors" element={<Doctors />} />
+        <Route path="clinics" element={<Clinics />} />
       </Route>
     </Routes>
   )

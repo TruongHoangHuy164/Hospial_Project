@@ -7,7 +7,8 @@ const UserSchema = new mongoose.Schema(
     email: { type: String, required: true, unique: true, lowercase: true, trim: true },
     password: { type: String, required: true, minlength: 6 },
     role: { type: String, enum: ['user', 'doctor', 'admin'], default: 'user', index: true },
-    permissions: { type: [String], default: [] },
+  permissions: { type: [String], default: [] },
+  lastActive: { type: Date, index: true },
     // Refresh token management (store identifiers, not raw tokens)
     refreshTokenIds: { type: [String], default: [] },
     // Password reset
@@ -16,6 +17,9 @@ const UserSchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
+
+// Helpful compound index for role + recent activity
+UserSchema.index({ role: 1, lastActive: -1 });
 
 UserSchema.pre('save', async function (next) {
   if (!this.isModified('password')) return next();
