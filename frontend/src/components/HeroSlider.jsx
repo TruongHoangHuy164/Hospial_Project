@@ -20,7 +20,7 @@ export default function HeroSlider() {
           <h1>{s.title}</h1>
           <p>{s.desc}</p>
           <div className="hero__actions">
-            <a className="btn btn--primary" href="#">Đặt lịch ngay</a>
+            <a className="btn btn--primary" href="/booking">Đặt lịch ngay</a>
             <a className="btn btn--ghost" href="#">Xem dịch vụ</a>
           </div>
         </div>

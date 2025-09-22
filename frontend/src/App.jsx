@@ -10,6 +10,7 @@ import Notices from './components/Notices'
 import AppointmentCTA from './components/AppointmentCTA'
 import BookingPage from './pages/booking/Index'
 import SpecialtiesPage from './pages/specialties/Index'
+import GuidePage from './pages/guide/Index'
 import Login from './pages/auth/Login'
 import Register from './pages/auth/Register'
 import ForgotPassword from './pages/auth/ForgotPassword'
@@ -42,6 +43,7 @@ export default function App() {
             <AppointmentCTA />
           </>
         } />
+  <Route path="/guide" element={<GuidePage />} />
   <Route path="/specialties" element={<SpecialtiesPage />} />
   <Route path="/booking" element={<BookingPage />} />
         <Route path="/login" element={<Login />} />

@@ -11,7 +11,7 @@ export default function Navbar() {
   <Link to="/specialties" className="nav__item"><i className="bi bi-hospital"></i> Chuyên khoa</Link>
         <Link to="#" className="nav__item"><i className="bi bi-clipboard2-pulse"></i> Dịch vụ</Link>
         <Link to="#" className="nav__item"><i className="bi bi-newspaper"></i> Tin tức</Link>
-        <Link to="#" className="nav__item"><i className="bi bi-clipboard-check"></i> Hướng dẫn khám</Link>
+  <Link to="/guide" className="nav__item"><i className="bi bi-clipboard-check"></i> Hướng dẫn khám</Link>
         <Link to="#" className="nav__item"><i className="bi bi-envelope"></i> Liên hệ</Link>
         <span className="flex-spacer" style={{ flex: 1 }} />
         {isAuthenticated && user?.role === 'admin' && (

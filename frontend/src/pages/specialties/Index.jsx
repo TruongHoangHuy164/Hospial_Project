@@ -35,7 +35,7 @@ export default function SpecialtiesPage(){
         <div className="row g-3">
           {items.map((s, idx) => (
             <div key={s._id} className="col-md-6">
-              <div className="d-flex align-items-center p-3 rounded-3" style={{ background:'#1e1f22' }}>
+              <div className="d-flex align-items-center p-3 rounded-3" style={{ background:'#f7f7f7ff' }}>
                 <div className="me-3 d-flex align-items-center justify-content-center rounded-2" style={{ width:64, height:64, background:'linear-gradient(135deg,#1b76ff,#1e9bff)' }}>
                   <i className={`bi bi-${icons[idx % icons.length]} fs-3 text-dark`}></i>
                 </div>

@@ -27,7 +27,7 @@ export default function Footer() {
           </div>
         </div>
       </div>
-      <div className="footer__note">© 2025 Bệnh viện Demo. </div>
+      <div className="footer__note">© 2025 Bệnh viện Demo. Developer By Trương Hoàng Huy </div>
     </footer>
   )
 }

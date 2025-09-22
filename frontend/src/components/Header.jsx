@@ -3,7 +3,7 @@ import React from 'react'
 export default function Header() {
   return (
     <header className="header container">
-      <a href="#" className="logo">
+      <a href="/" className="logo">
         <Logo />
         <div className="logo__text">
           <strong>Bệnh viện Demo</strong>
@@ -17,8 +17,8 @@ export default function Header() {
         </div>
       </div>
       <div className="header__cta">
-  <a className="btn btn--primary" href="#"><i className="bi bi-calendar2-check"></i> Đặt lịch khám</a>
-  <a className="btn btn--outline" href="tel:02812345678"><i className="bi bi-telephone"></i> Gọi: (028) 1234 5678</a>
+  <a className="btn btn--primary" href="/booking"><i className="bi bi-calendar2-check"></i> Đặt lịch khám</a>
+  <a className="btn btn--outline" href="tel: 0932961658"><i className="bi bi-telephone"></i> Gọi: 0932961658</a>
       </div>
     </header>
   )
