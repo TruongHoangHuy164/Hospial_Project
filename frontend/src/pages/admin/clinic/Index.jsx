@@ -19,6 +19,7 @@ export default function Clinics() {
   const [specForm, setSpecForm] = useState({ ten: '', moTa: '' });
   const [specEditing, setSpecEditing] = useState(null);
   const [showSpecModal, setShowSpecModal] = useState(false);
+  const [filterChuyenKhoaId, setFilterChuyenKhoaId] = useState('');
 
   const headers = useMemo(() => ({
     'Content-Type': 'application/json',
@@ -32,9 +33,7 @@ export default function Clinics() {
       url.searchParams.set('page', String(page));
       url.searchParams.set('limit', String(limit));
       if (q) url.searchParams.set('q', q);
-      if (specEditing === null && specQ === '' && specSelectedId()) {
-        url.searchParams.set('chuyenKhoaId', specSelectedId());
-      }
+      if (filterChuyenKhoaId) url.searchParams.set('chuyenKhoaId', filterChuyenKhoaId);
       const res = await fetch(url, { headers });
       const json = await res.json();
       if (!res.ok) throw json;
@@ -44,8 +43,8 @@ export default function Clinics() {
     finally { setLoading(false); }
   }
 
-  useEffect(() => { load(); /* eslint-disable-next-line */ }, [page, limit]);
-  useEffect(() => { if (tab === 'clinics') load(); /* eslint-disable-next-line */ }, [q]);
+  useEffect(() => { load(); /* eslint-disable-next-line */ }, [page, limit, filterChuyenKhoaId]);
+  useEffect(() => { if (tab === 'clinics') load(); /* eslint-disable-next-line */ }, [q, tab]);
 
   async function loadSpecialties() {
     try {
@@ -59,11 +58,6 @@ export default function Clinics() {
     } catch (e) {}
   }
   useEffect(() => { loadSpecialties(); /* eslint-disable-next-line */ }, [specQ]);
-
-  function specSelectedId() {
-    // if editing a clinic, prefer its selected id; else none
-    return form?.chuyenKhoaId || '';
-  }
 
   function openCreate() {
     setEditing(null);
@@ -123,6 +117,10 @@ export default function Clinics() {
         <div className="col-md-7 d-flex gap-2">
           <input className="form-control" placeholder="Tìm theo tên/chuyên khoa" value={q} onChange={(e)=>setQ(e.target.value)} onKeyDown={(e)=>{ if(e.key==='Enter'){ setPage(1); load(); } }} />
           <button className="btn btn-primary" onClick={()=>{ setPage(1); load(); }} disabled={loading}><i className="bi bi-search"></i> Tìm</button>
+          <select className="form-select" value={filterChuyenKhoaId} onChange={(e)=>{ setFilterChuyenKhoaId(e.target.value); setPage(1); }} style={{ maxWidth: 220 }}>
+            <option value="">Tất cả chuyên khoa</option>
+            {specialties.map(s=> <option key={s._id} value={s._id}>{s.ten}</option>)}
+          </select>
           <select className="form-select" value={limit} onChange={(e)=>{ setLimit(parseInt(e.target.value,10)); setPage(1); }} style={{ maxWidth: 140 }}>
             {[10,20,50,100].map(n=> <option key={n} value={n}>{n}/trang</option>)}
           </select>
@@ -211,7 +209,11 @@ export default function Clinics() {
             </div>
             <div className="col-md-7 d-flex gap-2">
               <input className="form-control" placeholder="Tìm theo tên chuyên khoa" value={specQ} onChange={(e)=>setSpecQ(e.target.value)} />
-              <button className="btn btn-primary" onClick={()=>loadSpecialties()} disabled={loading}><i className="bi bi-search"></i> Tìm</button>
+                          <button className="btn btn-primary" onClick={() => loadSpecialties()} disabled={loading}><i className="bi bi-search"></i> Tìm</button>
+                          <select className="form-select" value={filterChuyenKhoaId} onChange={(e)=>{ setFilterChuyenKhoaId(e.target.value); setPage(1); }} style={{ maxWidth: 220 }}>
+            <option value="">Tất cả chuyên khoa</option>
+            {specialties.map(s=> <option key={s._id} value={s._id}>{s.ten}</option>)}
+          </select>
             </div>
           </div>
           <div className="table-responsive">

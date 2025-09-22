@@ -7,6 +7,7 @@ export default function Doctors() {
   const chucDanhOptions = ['Trưởng khoa', 'Bác sĩ điều trị'];
   const [items, setItems] = useState([]);
   const [specialties, setSpecialties] = useState([]);
+  const [filterChuyenKhoa, setFilterChuyenKhoa] = useState('');
   const [q, setQ] = useState('');
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(10);
@@ -57,6 +58,7 @@ export default function Doctors() {
       url.searchParams.set('page', String(page));
       url.searchParams.set('limit', String(limit));
       if (q) url.searchParams.set('q', q);
+      if (filterChuyenKhoa) url.searchParams.set('chuyenKhoa', filterChuyenKhoa);
       const res = await fetch(url, { headers });
       const json = await res.json();
       if (!res.ok) throw json;
@@ -66,7 +68,7 @@ export default function Doctors() {
     finally { setLoading(false); }
   }
 
-  useEffect(() => { load(); /* eslint-disable-next-line */ }, [page, limit]);
+  useEffect(() => { load(); /* eslint-disable-next-line */ }, [page, limit, filterChuyenKhoa]);
   useEffect(() => { loadClinics(); }, []);
   useEffect(() => { // load specialties for dropdown
     (async () => {
@@ -201,71 +203,64 @@ export default function Doctors() {
         <div className="col-md-7 d-flex gap-2">
           <input className="form-control" placeholder="Tìm theo họ tên" value={q} onChange={(e)=>setQ(e.target.value)} onKeyDown={(e)=>{ if(e.key==='Enter'){ setPage(1); load(); } }} />
           <button className="btn btn-primary" onClick={()=>{ setPage(1); load(); }} disabled={loading}><i className="bi bi-search"></i> Tìm</button>
+          <select className="form-select" value={filterChuyenKhoa} onChange={(e)=>{ setFilterChuyenKhoa(e.target.value); setPage(1); }} style={{ maxWidth: 220 }}>
+            <option value="">Tất cả chuyên khoa</option>
+            {specialties.map(s => <option key={s._id} value={s.ten}>{s.ten}</option>)}
+          </select>
           <select className="form-select" value={limit} onChange={(e)=>{ setLimit(parseInt(e.target.value,10)); setPage(1); }} style={{ maxWidth: 140 }}>
             {[10,20,50,100].map(n=> <option key={n} value={n}>{n}/trang</option>)}
           </select>
         </div>
       </div>
 
-      <div className="table-responsive">
-        <table className="table table-striped table-sm align-middle table-hover">
-          <thead>
-            <tr>
-              <th>Họ tên</th>
-              <th>Chuyên khoa</th>
-              <th>Phòng khám</th>
-              <th>Mã số</th>
-              <th>Học vị</th>
-              <th>Chức danh</th>
-              <th className="text-nowrap">Năm KN</th>
-              <th className="text-nowrap">Giới tính</th>
-              <th className="text-nowrap">Ngày sinh</th>
-              <th className="text-nowrap">SĐT</th>
-              <th>Địa chỉ</th>
-              <th className="text-center text-nowrap">Ảnh</th>
-              <th>Mô tả</th>
-              <th>Email (BS)</th>
-              <th>Email tài khoản</th>
-              <th className="text-nowrap">Trạng thái</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody>
-            {items.map(bs => (
-              <tr key={bs._id}>
-                <td>{bs.hoTen}</td>
-                <td>{bs.chuyenKhoa}</td>
-                <td>{bs.phongKhamId?.tenPhong || bs.phongKhamId}</td>
-                <td>{bs.maSo || '-'}</td>
-                <td>{bs.hocVi || '-'}</td>
-                <td>{bs.chucDanh || '-'}</td>
-                <td>{bs.namKinhNghiem ?? '-'}</td>
-                <td>{fmtGender(bs.gioiTinh)}</td>
-                <td>{fmtDate(bs.ngaySinh)}</td>
-                <td>{bs.soDienThoai || '-'}</td>
-                <td className="text-truncate" style={{ maxWidth: 200 }} title={bs.diaChi || ''}>{bs.diaChi || '-'}</td>
-                <td className="text-center" style={{ width: 56 }}>{bs.anhDaiDien ? (<img src={toAbsoluteUrl(bs.anhDaiDien)} alt="avatar" style={{ width: 36, height: 36, objectFit: 'cover', borderRadius: '50%' }} />) : '-'}</td>
-                <td className="text-truncate" style={{ maxWidth: 240 }} title={bs.moTa || ''}>{bs.moTa || '-'}</td>
-                <td>{bs.email || <span className="text-muted">-</span>}</td>
-                <td>{bs.userId?.email || <span className="text-muted">Chưa có</span>}</td>
-                <td>{bs.trangThai || '-'}</td>
-                <td className="text-end d-flex gap-2 justify-content-end">
-                 {!bs.userId && (
+      <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-5 g-3">
+        {items.map((bs) => (
+          <div className="col" key={bs._id}>
+            <div className="card h-100  shadow-sm border-0">
+              <div className="position-relative">
+                {bs.anhDaiDien ? (
+                  <img
+                    src={toAbsoluteUrl(bs.anhDaiDien)}
+                    alt={bs.hoTen}
+                    className="card-img-top"
+                    style={{ height: 300 , objectFit: 'cover', borderTopLeftRadius: '0.75rem', borderTopRightRadius: '0.75rem' }}
+                  />
+                ) : (
+                  <div className="w-100 d-flex align-items-center justify-content-center bg-light"
+                       style={{ height: 300, width: 200, borderTopLeftRadius: '0.75rem', borderTopRightRadius: '0.75rem' }}>
+                    <i className="bi bi-person-circle fs-1 text-secondary"></i>
+                  </div>
+                )}
+                <button type="button" className="btn btn-light btn-sm position-absolute bottom-0 end-0 m-2 rounded-circle shadow"
+                        title="Sửa" onClick={()=>openEdit(bs)}>
+                  <i className="bi bi-pencil"></i>
+                </button>
+              </div>
+              <div className="card-body text-center bg-dark text-white"
+                   style={{ borderBottomLeftRadius: '0.75rem', borderBottomRightRadius: '0.75rem' }}>
+                <div className="text-primary fw-bold text-uppercase" style={{ letterSpacing: '0.5px' }}>{bs.hocVi || '-'}</div>
+                <div className="h5 text-primary fw-bold mb-1">{bs.hoTen}</div>
+                <div className="small text-info">{bs.chuyenKhoa || '-'}</div>
+              </div>
+              <div className="card-footer bg-transparent border-0 d-flex flex-wrap gap-2 justify-content-between align-items-center">
+                <div className="small text-muted">{bs.phongKhamId?.tenPhong || bs.phongKhamId || ''}</div>
+                <div className="ms-auto d-flex gap-2">
+                  {!bs.userId && (
                     <button className="btn btn-sm btn-outline-primary" onClick={()=>provisionAccount(bs._id)}>
                       Cấp tài khoản
                     </button>
-                        )}
-                <button className="btn btn-sm btn-outline-secondary" onClick={()=>openEdit(bs)}>Sửa</button>
-                <button className="btn btn-sm btn-outline-danger" onClick={()=>removeDoctor(bs._id)}>Xóa</button>
-                  
-                </td>
-              </tr>
-            ))}
-            {items.length === 0 && (
-              <tr><td colSpan={7} className="text-center">Không có dữ liệu</td></tr>
-            )}
-          </tbody>
-        </table>
+                  )}
+                  <button className="btn btn-sm btn-outline-danger" onClick={()=>removeDoctor(bs._id)}>Xóa</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        ))}
+        {items.length === 0 && (
+          <div className="col-12">
+            <div className="text-center text-muted py-4">Không có dữ liệu</div>
+          </div>
+        )}
       </div>
 
       <div className="d-flex justify-content-between align-items-center mt-2">
