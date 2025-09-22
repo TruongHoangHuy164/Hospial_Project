@@ -8,7 +8,7 @@ export default function Navbar() {
     <nav className="navbar">
       <div className="container navbar__inner">
         <Link to="#" className="nav__item"><i className="bi bi-info-circle"></i> Giới thiệu</Link>
-        <Link to="#" className="nav__item"><i className="bi bi-hospital"></i> Chuyên khoa</Link>
+  <Link to="/specialties" className="nav__item"><i className="bi bi-hospital"></i> Chuyên khoa</Link>
         <Link to="#" className="nav__item"><i className="bi bi-clipboard2-pulse"></i> Dịch vụ</Link>
         <Link to="#" className="nav__item"><i className="bi bi-newspaper"></i> Tin tức</Link>
         <Link to="#" className="nav__item"><i className="bi bi-clipboard-check"></i> Hướng dẫn khám</Link>

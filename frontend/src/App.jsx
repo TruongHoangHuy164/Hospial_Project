@@ -8,6 +8,8 @@ import Services from './components/Services'
 import Highlights from './components/Highlights'
 import Notices from './components/Notices'
 import AppointmentCTA from './components/AppointmentCTA'
+import BookingPage from './pages/booking/Index'
+import SpecialtiesPage from './pages/specialties/Index'
 import Login from './pages/auth/Login'
 import Register from './pages/auth/Register'
 import ForgotPassword from './pages/auth/ForgotPassword'
@@ -40,6 +42,8 @@ export default function App() {
             <AppointmentCTA />
           </>
         } />
+  <Route path="/specialties" element={<SpecialtiesPage />} />
+  <Route path="/booking" element={<BookingPage />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/forgot" element={<ForgotPassword />} />

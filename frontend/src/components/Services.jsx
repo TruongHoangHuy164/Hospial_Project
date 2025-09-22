@@ -1,4 +1,5 @@
 import React from 'react'
+import { Link } from 'react-router-dom'
 
 const items = [
   { id: 1, label: 'Đặt lịch khám', icon: 'calendar2-check' },
@@ -11,10 +12,17 @@ export default function Services() {
   return (
     <section className="services container">
       {items.map(i => (
-        <a key={i.id} href="#" className="service__item">
-          <i className={`bi bi-${i.icon}`} style={{fontSize:'20px', marginRight: 8}}></i>
-          {i.label}
-        </a>
+        i.id === 1 ? (
+          <Link key={i.id} to="/booking" className="service__item">
+            <i className={`bi bi-${i.icon}`} style={{fontSize:'20px', marginRight: 8}}></i>
+            {i.label}
+          </Link>
+        ) : (
+          <a key={i.id} href="#" className="service__item">
+            <i className={`bi bi-${i.icon}`} style={{fontSize:'20px', marginRight: 8}}></i>
+            {i.label}
+          </a>
+        )
       ))}
     </section>
   )

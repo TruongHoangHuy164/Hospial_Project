@@ -1,4 +1,5 @@
 import React from 'react'
+import { Link } from 'react-router-dom'
 
 export default function Footer() {
   return (
@@ -12,7 +13,7 @@ export default function Footer() {
         <div>
           <h4>Liên kết</h4>
           <ul className="list">
-            <li><a href="#">Chuyên khoa</a></li>
+            <li><Link to="/specialties">Chuyên khoa</Link></li>
             <li><a href="#">Dịch vụ</a></li>
             <li><a href="#">Tin tức</a></li>
             <li><a href="#">Liên hệ</a></li>

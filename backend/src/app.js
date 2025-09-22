@@ -13,6 +13,7 @@ const clinicsRouter = require('./routes/clinics');
 const uploadsRouter = require('./routes/uploads');
 const specialtiesRouter = require('./routes/specialties');
 const doctorSelfRouter = require('./routes/doctorSelf');
+const bookingRouter = require('./routes/booking');
 
 const app = express();
 
@@ -37,6 +38,7 @@ app.use('/api/doctor', auth, authorize('doctor'), doctorSelfRouter);
 app.use('/api/clinics', auth, authorize('admin'), clinicsRouter);
 app.use('/api/uploads', auth, authorize('admin','doctor'), uploadsRouter);
 app.use('/api/specialties', auth, authorize('admin'), specialtiesRouter);
+app.use('/api/booking', bookingRouter);
 
 // Protected sample route
 app.get('/api/profile', auth, (req, res) => {
