@@ -12,6 +12,7 @@ const doctorsRouter = require('./routes/doctors');
 const clinicsRouter = require('./routes/clinics');
 const uploadsRouter = require('./routes/uploads');
 const specialtiesRouter = require('./routes/specialties');
+const doctorSelfRouter = require('./routes/doctorSelf');
 
 const app = express();
 
@@ -32,8 +33,9 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use('/api/users', auth, authorize('admin'), usersRouter);
 app.use('/api/admin', auth, authorize('admin'), adminRouter);
 app.use('/api/doctors', auth, authorize('admin'), doctorsRouter);
+app.use('/api/doctor', auth, authorize('doctor'), doctorSelfRouter);
 app.use('/api/clinics', auth, authorize('admin'), clinicsRouter);
-app.use('/api/uploads', auth, authorize('admin'), uploadsRouter);
+app.use('/api/uploads', auth, authorize('admin','doctor'), uploadsRouter);
 app.use('/api/specialties', auth, authorize('admin'), specialtiesRouter);
 
 // Protected sample route

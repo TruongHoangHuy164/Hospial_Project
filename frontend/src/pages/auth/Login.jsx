@@ -16,6 +16,8 @@ export default function Login() {
       const u = await signIn(email, password);
       if (u?.role === 'admin') {
         navigate('/admin/overview');
+      } else if (u?.role === 'doctor') {
+        navigate('/doctor/dashboard');
       } else {
         navigate('/');
       }

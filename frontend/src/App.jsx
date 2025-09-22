@@ -20,6 +20,10 @@ import Users from './pages/admin/Users'
 import Doctors from './pages/admin/doctor/Index'
 import Clinics from './pages/admin/clinic/Index'
 import SiteLayout from './layouts/SiteLayout'
+import RequireDoctor from './pages/doctor/RequireDoctor'
+import DoctorLayout from './pages/doctor/Layout'
+import DoctorDashboard from './pages/doctor/Dashboard'
+import DoctorProfile from './pages/doctor/Profile'
 
 export default function App() {
   return (
@@ -47,6 +51,11 @@ export default function App() {
         <Route path="users" element={<Users />} />
         <Route path="doctors" element={<Doctors />} />
         <Route path="clinics" element={<Clinics />} />
+      </Route>
+
+      <Route path="/doctor" element={<RequireDoctor><DoctorLayout /></RequireDoctor>}>
+        <Route path="dashboard" element={<DoctorDashboard />} />
+        <Route path="profile" element={<DoctorProfile />} />
       </Route>
     </Routes>
   )
