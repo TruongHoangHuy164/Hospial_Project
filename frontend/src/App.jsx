@@ -27,6 +27,7 @@ import RequireDoctor from './pages/doctor/RequireDoctor'
 import DoctorLayout from './pages/doctor/Layout'
 import DoctorDashboard from './pages/doctor/Dashboard'
 import DoctorProfile from './pages/doctor/Profile'
+import DoctorSchedulePage from './pages/doctor/Schedule'
 
 export default function App() {
   return (
@@ -61,6 +62,7 @@ export default function App() {
 
       <Route path="/doctor" element={<RequireDoctor><DoctorLayout /></RequireDoctor>}>
         <Route path="dashboard" element={<DoctorDashboard />} />
+        <Route path="schedule" element={<DoctorSchedulePage />} />
         <Route path="profile" element={<DoctorProfile />} />
       </Route>
     </Routes>

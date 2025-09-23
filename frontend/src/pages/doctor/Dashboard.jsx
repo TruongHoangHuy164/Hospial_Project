@@ -14,6 +14,11 @@ export default function DoctorDashboard() {
   const [rxQuery, setRxQuery] = useState('');
   const [rxResults, setRxResults] = useState([]);
   const [rxItems, setRxItems] = useState([]); // {thuoc, soLuong}
+  const [todayPatients, setTodayPatients] = useState([]);
+  const [caseDetail, setCaseDetail] = useState(null);
+  const [clinical, setClinical] = useState({ trieuChung: '', khamLamSang: '', huyetAp: '', nhipTim: '', nhietDo: '', canNang: '', chieuCao: '' });
+  const [labs, setLabs] = useState([]);
+  const [history, setHistory] = useState([]);
 
   const headers = useMemo(() => ({
     'Content-Type': 'application/json',
@@ -61,6 +66,89 @@ export default function DoctorDashboard() {
   }
 
   useEffect(()=>{ loadCasesToday(); },[]);
+
+  async function loadTodayPatients(){
+    try{
+      const res = await fetch(`${API_URL}/api/doctor/today/patients`, { headers });
+      const json = await res.json();
+      if(!res.ok) throw json;
+      setTodayPatients(json);
+    }catch(e){ console.error(e); }
+  }
+
+  useEffect(()=>{ loadTodayPatients(); },[]);
+
+  async function openCase(hsId){
+    try{
+      const res = await fetch(`${API_URL}/api/doctor/cases/${hsId}`, { headers });
+      const json = await res.json();
+      if(!res.ok) throw json;
+      setSelectedCase(json);
+      setCaseDetail(json);
+      setClinical({
+        trieuChung: json.trieuChung || '', khamLamSang: json.khamLamSang || '',
+        huyetAp: json.sinhHieu?.huyetAp || '', nhipTim: json.sinhHieu?.nhipTim || '', nhietDo: json.sinhHieu?.nhietDo || '',
+        canNang: json.sinhHieu?.canNang || '', chieuCao: json.sinhHieu?.chieuCao || ''
+      });
+      await loadLabs(json._id);
+      await loadHistory(json.benhNhanId?._id);
+    }catch(e){ console.error(e); }
+  }
+
+  async function loadLabs(hsId){
+    try{
+      const res = await fetch(`${API_URL}/api/doctor/cases/${hsId}/labs`, { headers });
+      const json = await res.json();
+      if(res.ok) setLabs(json); else console.error(json);
+    }catch(e){ console.error(e); }
+  }
+
+  async function loadHistory(benhNhanId){
+    try{
+      if(!benhNhanId) return setHistory([]);
+      const url = new URL(`${API_URL}/api/doctor/patients/${benhNhanId}/cases`);
+      url.searchParams.set('limit','5');
+      const res = await fetch(url, { headers });
+      const json = await res.json();
+      if(res.ok) setHistory(json.items || []);
+    }catch(e){ console.error(e); }
+  }
+
+  async function completeVisit(){
+    try{
+      if(!selectedCase?._id) return;
+      const res = await fetch(`${API_URL}/api/doctor/cases/${selectedCase._id}/complete`, { method:'POST', headers });
+      const json = await res.json();
+      if(!res.ok) throw json;
+      alert('Đã kết thúc ca khám');
+      await Promise.all([loadCasesToday(), loadTodayPatients()]);
+    }catch(e){ alert(e?.message || 'Lỗi kết thúc ca'); }
+  }
+
+  async function saveClinical(){
+    try{
+      if(!selectedCase?._id) return;
+      const payload = {
+        trieuChung: clinical.trieuChung,
+        khamLamSang: clinical.khamLamSang,
+        sinhHieu: { huyetAp: clinical.huyetAp, nhipTim: Number(clinical.nhipTim)||undefined, nhietDo: Number(clinical.nhietDo)||undefined, canNang: Number(clinical.canNang)||undefined, chieuCao: Number(clinical.chieuCao)||undefined },
+      };
+      const res = await fetch(`${API_URL}/api/doctor/cases/${selectedCase._id}`, { method:'PUT', headers, body: JSON.stringify(payload) });
+      const json = await res.json();
+      if(!res.ok) throw json;
+      setCaseDetail(json);
+      alert('Đã lưu thông tin lâm sàng');
+    }catch(e){ alert(e?.message||'Lỗi lưu'); }
+  }
+
+  async function orderLab(loai){
+    try{
+      if(!selectedCase?._id) return;
+      const res = await fetch(`${API_URL}/api/doctor/cases/${selectedCase._id}/labs`, { method:'POST', headers, body: JSON.stringify({ loaiChiDinh: loai }) });
+      const json = await res.json();
+      if(res.ok){ await loadLabs(selectedCase._id); } else { alert(json?.message||'Lỗi'); }
+    }catch(e){ alert('Lỗi chỉ định'); }
+  }
 
   async function createCase(){
     try{
@@ -171,7 +259,7 @@ export default function DoctorDashboard() {
           </div>
         </div>
         <div className="col-md-6">
-          <div className="card h-100 shadow-sm">
+          <div className="card shadow-sm mb-3">
             <div className="card-header fw-semibold">Hồ sơ khám hôm nay</div>
             <div className="card-body">
               {loadingCases ? (
@@ -181,7 +269,7 @@ export default function DoctorDashboard() {
               ) : (
                 <div className="list-group">
                   {casesToday.map(hs => (
-                    <button type="button" key={hs._id} className={`list-group-item list-group-item-action ${selectedCase?._id===hs._id?'active':''}`} onClick={()=>setSelectedCase(hs)}>
+                    <button type="button" key={hs._id} className={`list-group-item list-group-item-action ${selectedCase?._id===hs._id?'active':''}`} onClick={()=>openCase(hs._id)}>
                       <div className="d-flex justify-content-between align-items-center">
                         <div>
                           <div className="fw-semibold">{hs.benhNhanId?.hoTen}</div>
@@ -195,12 +283,89 @@ export default function DoctorDashboard() {
               )}
             </div>
           </div>
+
+          <div className="card shadow-sm mb-3">
+            <div className="card-header fw-semibold">Bệnh nhân theo lịch hôm nay</div>
+            <div className="card-body">
+              {todayPatients.length===0 ? (
+                <div className="text-muted">Chưa có lịch hẹn</div>
+              ) : (
+                <div className="list-group">
+                  {todayPatients.map((it, idx)=> (
+                    <div key={idx} className="list-group-item d-flex justify-content-between align-items-center">
+                      <div>
+                        <div className="fw-semibold">{it.benhNhan?.hoTen}</div>
+                        <div className="small text-muted">{it.khungGio} {it.soThuTu? `• STT ${it.soThuTu}`:''}</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+
           {selectedCase && (
-            <div className="card mt-3 shadow-sm">
-              <div className="card-header fw-semibold">Kê đơn cho: {selectedCase.benhNhanId?.hoTen}</div>
+            <div className="card shadow-sm">
+              <div className="card-header fw-semibold">Khám cho: {caseDetail?.benhNhanId?.hoTen || selectedCase.benhNhanId?.hoTen}</div>
               <div className="card-body">
+                <div className="mb-3">
+                  <div className="fw-semibold mb-2">Thông tin lâm sàng</div>
+                  <div className="row g-2">
+                    <div className="col-12"><textarea className="form-control" placeholder="Triệu chứng" value={clinical.trieuChung} onChange={e=>setClinical(s=>({...s, trieuChung:e.target.value}))}/></div>
+                    <div className="col-12"><textarea className="form-control" placeholder="Khám lâm sàng" value={clinical.khamLamSang} onChange={e=>setClinical(s=>({...s, khamLamSang:e.target.value}))}/></div>
+                    <div className="col-6"><input className="form-control" placeholder="Huyết áp" value={clinical.huyetAp} onChange={e=>setClinical(s=>({...s, huyetAp:e.target.value}))}/></div>
+                    <div className="col-6"><input className="form-control" type="number" placeholder="Nhịp tim" value={clinical.nhipTim} onChange={e=>setClinical(s=>({...s, nhipTim:e.target.value}))}/></div>
+                    <div className="col-6"><input className="form-control" type="number" step="0.1" placeholder="Nhiệt độ (°C)" value={clinical.nhietDo} onChange={e=>setClinical(s=>({...s, nhietDo:e.target.value}))}/></div>
+                    <div className="col-3"><input className="form-control" type="number" step="0.1" placeholder="Cân nặng (kg)" value={clinical.canNang} onChange={e=>setClinical(s=>({...s, canNang:e.target.value}))}/></div>
+                    <div className="col-3"><input className="form-control" type="number" step="0.1" placeholder="Chiều cao (cm)" value={clinical.chieuCao} onChange={e=>setClinical(s=>({...s, chieuCao:e.target.value}))}/></div>
+                  </div>
+                  <div className="d-flex justify-content-end mt-2 gap-2">
+                    <button className="btn btn-outline-primary btn-sm" onClick={saveClinical}><i className="bi bi-save"/> Lưu lâm sàng</button>
+                    <button className="btn btn-outline-success btn-sm" onClick={completeVisit}><i className="bi bi-check2-circle"/> Kết thúc ca</button>
+                  </div>
+                </div>
+
+                <hr/>
+                <div className="mb-3">
+                  <div className="d-flex justify-content-between align-items-center">
+                    <div className="fw-semibold">Chỉ định cận lâm sàng</div>
+                    <div className="btn-group">
+                      <button className="btn btn-sm btn-outline-secondary" onClick={()=>orderLab('xet_nghiem')}>Xét nghiệm</button>
+                      <button className="btn btn-sm btn-outline-secondary" onClick={()=>orderLab('sieu_am')}>Siêu âm</button>
+                      <button className="btn btn-sm btn-outline-secondary" onClick={()=>orderLab('x_quang')}>X-quang</button>
+                    </div>
+                  </div>
+                  {labs.length>0 && (
+                    <ul className="list-group mt-2">
+                      {labs.map(l => (
+                        <li key={l._id} className="list-group-item d-flex justify-content-between align-items-center">
+                          <span>{l.loaiChiDinh}</span>
+                          <span className="badge text-bg-light">{l.ketQua? 'Đã có kết quả':'Đang chờ'}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+
+                <hr/>
+                {history.length>0 && (
+                  <div className="mb-3">
+                    <div className="fw-semibold mb-2">Lịch sử khám gần đây</div>
+                    <ul className="list-group">
+                      {history.map(h => (
+                        <li key={h._id} className="list-group-item d-flex justify-content-between align-items-center">
+                          <span>{new Date(h.createdAt).toLocaleDateString()} • {h.chanDoan || 'Chưa ghi'}</span>
+                          <span className="badge text-bg-light">{h.trangThai || ''}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                <hr/>
                 <div className="mb-2">
-                  <label className="form-label">Tìm thuốc</label>
+                  <div className="fw-semibold">Kê đơn thuốc</div>
+                  <label className="form-label mt-2">Tìm thuốc</label>
                   <input className="form-control" placeholder="Nhập tên thuốc..." value={rxQuery} onChange={(e)=>setRxQuery(e.target.value)} />
                   {rxResults.length>0 && (
                     <div className="list-group mt-2">
