@@ -13,8 +13,46 @@ export default function BookingPage(){
   const [selected, setSelected] = useState({ bacSiId:'', khungGio:'' });
   const [appointment, setAppointment] = useState(null);
   const [ticket, setTicket] = useState(null);
+  const [loadingPay, setLoadingPay] = useState(false);
 
   const headers = useMemo(()=>({ 'Content-Type':'application/json', Authorization: `Bearer ${localStorage.getItem('accessToken')||''}` }), []);
+
+  // Fast handle MoMo return as soon as component mounts
+  useEffect(()=>{
+    try{
+      const params = new URLSearchParams(window.location.search);
+      // If returning from MoMo, resultCode is present
+      const resultCode = params.get('resultCode');
+      const apptId = sessionStorage.getItem('momo_appt_id');
+      if(resultCode !== null && apptId){
+        const body = {};
+        params.forEach((v,k)=>{ body[k]=v; });
+        fetch(`${API_URL}/api/booking/momo/return`, { method:'POST', headers: { 'Content-Type':'application/json' }, body: JSON.stringify(body) })
+          .then(async r => {
+            const j = await r.json().catch(()=>({}));
+            setAppointment({ _id: apptId });
+            if(r.ok && j?.ok){
+              setTicket({ soThuTu: j.soThuTu, trangThai: j.sttTrangThai || 'dang_cho' });
+              setStep(5);
+            }else{
+              setStep(5);
+              pollTicket(apptId);
+            }
+          })
+          .catch(()=>{
+            setAppointment({ _id: apptId });
+            setStep(5);
+            pollTicket(apptId);
+          })
+          .finally(()=>{
+            sessionStorage.removeItem('momo_appt_id');
+            const url = new URL(window.location.href);
+            url.search = '';
+            window.history.replaceState({}, '', url.toString());
+          });
+      }
+    }catch{}
+  },[]);
 
   async function savePatient(){
     try{
@@ -38,6 +76,41 @@ export default function BookingPage(){
       const params = new URLSearchParams(window.location.search);
       const pre = params.get('chuyenKhoaId');
       if(pre) setChuyenKhoaId(pre);
+      // Fast handle MoMo return
+      const apptId = sessionStorage.getItem('momo_appt_id');
+      const resultCode = params.get('resultCode');
+      const orderId = params.get('orderId');
+      if(apptId && resultCode !== null){
+        // Try fast return first
+        const body = {};
+        params.forEach((v,k)=>{ body[k]=v; });
+        fetch(`${API_URL}/api/booking/momo/return`, { method:'POST', headers: { 'Content-Type':'application/json' }, body: JSON.stringify(body) })
+          .then(async r => {
+            const j = await r.json().catch(()=>({}));
+            if(r.ok && j?.ok){
+              setAppointment({ _id: apptId });
+              setTicket({ soThuTu: j.soThuTu, trangThai: j.sttTrangThai || 'dang_cho' });
+              setStep(5);
+            }else{
+              // fallback to poll
+              setAppointment({ _id: apptId });
+              setStep(5);
+              pollTicket(apptId);
+            }
+          })
+          .catch(()=>{
+            setAppointment({ _id: apptId });
+            setStep(5);
+            pollTicket(apptId);
+          })
+          .finally(()=>{
+            sessionStorage.removeItem('momo_appt_id');
+            // clean URL
+            const url = new URL(window.location.href);
+            url.search = '';
+            window.history.replaceState({}, '', url.toString());
+          });
+      }
     }catch{}
   },[]);
 
@@ -71,12 +144,31 @@ export default function BookingPage(){
   async function pay(){
     try{
       if(!appointment?._id) return;
-      const res = await fetch(`${API_URL}/api/booking/appointments/${appointment._id}/pay`, { method:'POST', headers });
+      setLoadingPay(true);
+      const res = await fetch(`${API_URL}/api/booking/appointments/${appointment._id}/momo`, { method:'POST', headers });
       const json = await res.json();
       if(!res.ok) throw json;
-      setTicket(json.soThuTu);
-      setStep(5);
-    }catch(e){ alert(e?.message || 'Thanh toán thất bại'); }
+      // Store appt id for return handling then redirect to MoMo payUrl
+      sessionStorage.setItem('momo_appt_id', appointment._id);
+      window.location.href = json.payUrl;
+    }catch(e){ alert(e?.message || 'Tạo thanh toán thất bại'); }
+    finally{ setLoadingPay(false); }
+  }
+
+  async function pollTicket(apptId){
+    let tries = 0;
+    const timer = setInterval(async () => {
+      tries++;
+      try{
+        const res = await fetch(`${API_URL}/api/booking/appointments/${apptId}/ticket`);
+        const json = await res.json();
+        if(res.ok && json.soThuTu){
+          setTicket({ soThuTu: json.soThuTu, trangThai: json.sttTrangThai || 'dang_cho' });
+          clearInterval(timer);
+        }
+      }catch{}
+      if(tries>20){ clearInterval(timer); }
+    }, 2000);
   }
 
   return (
@@ -159,23 +251,35 @@ export default function BookingPage(){
           <div className="card-header">4. Thanh toán</div>
           <div className="card-body">
             <p>Vui lòng thanh toán để hoàn tất đặt lịch khám.</p>
-            <div className="alert alert-info">(Giả lập) Nhấn nút "Thanh toán" để hoàn tất.</div>
+            <div className="alert alert-info">
+              Sử dụng MoMo (môi trường test). Số tiền: <strong>150.000 VND</strong>.
+            </div>
           </div>
           <div className="card-footer d-flex justify-content-between">
             <button className="btn btn-outline-secondary" onClick={()=>setStep(3)}>Quay lại</button>
-            <button className="btn btn-success" onClick={pay}>Thanh toán</button>
+            <button className="btn btn-success" onClick={pay} disabled={loadingPay}>{loadingPay? 'Đang khởi tạo...' : 'Thanh toán với MoMo'}</button>
           </div>
         </div>
       )}
 
-      {step===5 && ticket && (
+      {step===5 && (
         <div className="card shadow-sm">
           <div className="card-header">5. Số thứ tự khám bệnh</div>
           <div className="card-body text-center">
-            <h4 className="mb-3">Mã số của bạn</h4>
-            <div className="display-3 fw-bold">{ticket.soThuTu}</div>
-            <div className="mt-2">Trạng thái: <span className="badge text-bg-secondary">{ticket.trangThai}</span></div>
-            <div className="mt-2 small text-muted">Giữ gìn số thứ tự và đến đúng giờ khám.</div>
+            {!ticket && (
+              <>
+                <div className="spinner-border" role="status"><span className="visually-hidden">Loading...</span></div>
+                <div className="mt-2 small">Đang chờ hệ thống xác nhận thanh toán...</div>
+              </>
+            )}
+            {ticket && (
+              <>
+                <h4 className="mb-3">Mã số của bạn</h4>
+                <div className="display-3 fw-bold">{ticket.soThuTu}</div>
+                <div className="mt-2">Trạng thái: <span className="badge text-bg-secondary">{ticket.trangThai}</span></div>
+                <div className="mt-2 small text-muted">Giữ gìn số thứ tự và đến đúng giờ khám.</div>
+              </>
+            )}
           </div>
         </div>
       )}
