@@ -18,6 +18,10 @@ export default function Login() {
         navigate('/admin/overview');
       } else if (u?.role === 'doctor') {
         navigate('/doctor/dashboard');
+      } else if (u?.role === 'reception') {
+        navigate('/reception/dashboard');
+      } else if (u?.role === 'lab') {
+        navigate('/lab/dashboard');
       } else {
         navigate('/');
       }

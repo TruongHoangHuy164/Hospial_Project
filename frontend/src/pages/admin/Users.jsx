@@ -69,6 +69,8 @@ export default function Users() {
             <option value="">Tất cả vai trò</option>
             <option value="user">User</option>
             <option value="doctor">Doctor</option>
+            <option value="reception">Reception</option>
+            <option value="lab">Lab</option>
             <option value="admin">Admin</option>
           </select>
         </div>
@@ -102,6 +104,8 @@ export default function Users() {
                   <select className="form-select form-select-sm" value={u.role} onChange={(e)=>updateRole(u._id, e.target.value)}>
                     <option value="user">User</option>
                     <option value="doctor">Doctor</option>
+                    <option value="reception">Reception</option>
+                    <option value="lab">Lab</option>
                     <option value="admin">Admin</option>
                   </select>
                 </td>

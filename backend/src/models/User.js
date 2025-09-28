@@ -6,7 +6,7 @@ const UserSchema = new mongoose.Schema(
     name: { type: String, required: true, trim: true },
     email: { type: String, required: true, unique: true, lowercase: true, trim: true },
     password: { type: String, required: true, minlength: 6 },
-    role: { type: String, enum: ['user', 'doctor', 'admin'], default: 'user', index: true },
+  role: { type: String, enum: ['user', 'doctor', 'admin', 'reception', 'lab'], default: 'user', index: true },
   permissions: { type: [String], default: [] },
   lastActive: { type: Date, index: true },
     // Refresh token management (store identifiers, not raw tokens)

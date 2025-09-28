@@ -2,25 +2,21 @@ import React from 'react';
 import { Link, Outlet, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 
-export default function AdminLayout() {
+export default function LabLayout() {
   const { signOut, user } = useAuth();
   const navigate = useNavigate();
-  const onLogout = async () => {
-    await signOut();
-    navigate('/login');
-  };
+  const onLogout = async () => { await signOut(); navigate('/login'); };
   return (
     <div className="container-fluid">
       <div className="row">
         <aside className="col-12 col-md-3 col-xl-2 px-sm-2 px-0 bg-light">
           <div className="d-flex flex-column align-items-start px-3 pt-2 min-vh-100">
-            <Link to="/" className="navbar-brand my-3"><i className="bi bi-hospital"></i> Hospital</Link>
+            <Link to="/" className="navbar-brand my-3"><i className="bi bi-beaker"></i> Cận lâm sàng</Link>
             <ul className="nav nav-pills flex-column mb-auto w-100">
-              <li className="nav-item"><Link to="/admin/overview" className="nav-link">Tổng quan</Link></li>
-              <li className="nav-item"><Link to="/admin/users" className="nav-link">Quản lý người dùng</Link></li>
-              <li className="nav-item"><Link to="/admin/doctors" className="nav-link">Quản lý bác sĩ</Link></li>
-              <li className="nav-item"><Link to="/admin/clinics" className="nav-link">Quản lý chuyên khoa & phòng khám</Link></li>
-              <li className="nav-item"><Link to="/admin/staff" className="nav-link">Quản lý nhân viên (Lễ tân/CLS)</Link></li>
+              <li className="nav-item"><Link to="/lab/dashboard" className="nav-link">Bảng điều khiển</Link></li>
+              <li className="nav-item"><Link to="/lab/orders" className="nav-link">Tiếp nhận chỉ định</Link></li>
+              <li className="nav-item"><Link to="/lab/perform" className="nav-link">Thực hiện/Xử lý</Link></li>
+              <li className="nav-item"><Link to="/lab/results" className="nav-link">Nhập & Trả kết quả</Link></li>
               <li className="nav-item mt-2"><button className="btn btn-outline-secondary w-100" onClick={onLogout}><i className="bi bi-box-arrow-right"></i> Đăng xuất</button></li>
             </ul>
           </div>

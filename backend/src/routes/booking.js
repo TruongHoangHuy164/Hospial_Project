@@ -124,4 +124,67 @@ router.post('/appointments/:id/pay', async (req, res, next) => {
   }catch(err){ return next(err); }
 });
 
+// GET /api/booking/appointments - list appointments (optional filters)
+// query: date=YYYY-MM-DD, benhNhanId, bacSiId
+router.get('/appointments', async (req, res, next) => {
+  try{
+    const { date, benhNhanId, bacSiId } = req.query;
+    const filter = {};
+    if(date){
+      const d = new Date(date); if(isNaN(d)) return res.status(400).json({ message: 'date không hợp lệ' });
+      filter.ngayKham = { $gte: startOfDay(d), $lt: endOfDay(d) };
+    }
+    if(benhNhanId) filter.benhNhanId = new mongoose.Types.ObjectId(benhNhanId);
+    if(bacSiId) filter.bacSiId = new mongoose.Types.ObjectId(bacSiId);
+    const items = await LichKham.find(filter).sort({ ngayKham: -1, khungGio: 1 });
+    res.json(items);
+  }catch(err){ return next(err); }
+});
+
+// PUT /api/booking/appointments/:id - reschedule
+router.put('/appointments/:id', async (req, res, next) => {
+  try{
+    const { date, khungGio, bacSiId } = req.body || {};
+    const update = {};
+    if(date){ const d = new Date(date); if(isNaN(d)) return res.status(400).json({ message: 'date không hợp lệ' }); update.ngayKham = startOfDay(d); }
+    if(khungGio) update.khungGio = khungGio;
+    if(bacSiId) update.bacSiId = bacSiId;
+    if(Object.keys(update).length===0) return res.status(400).json({ message: 'Không có gì để cập nhật' });
+    const doc = await LichKham.findByIdAndUpdate(req.params.id, update, { new: true });
+    if(!doc) return res.status(404).json({ message: 'Không tìm thấy lịch' });
+    res.json(doc);
+  }catch(err){
+    if(err && err.code===11000){ return res.status(409).json({ message: 'Khung giờ đã được đặt' }); }
+    return next(err);
+  }
+});
+
+// GET /api/booking/queues - list queue numbers for a date (optional doctor)
+router.get('/queues', async (req, res, next) => {
+  try{
+    const { date, bacSiId } = req.query;
+    const d = date ? new Date(date) : new Date();
+    if(isNaN(d)) return res.status(400).json({ message: 'date không hợp lệ' });
+    const dayStart = startOfDay(d), dayEnd = endOfDay(d);
+    // find appts in date range
+    const appts = await LichKham.find({ ngayKham: { $gte: dayStart, $lt: dayEnd }, ...(bacSiId? { bacSiId } : {}) }).select('_id benhNhanId bacSiId khungGio').lean();
+    const stts = await SoThuTu.find({ lichKhamId: { $in: appts.map(a=>a._id) } }).select('lichKhamId soThuTu trangThai').lean();
+    const bnIds = appts.map(a=>a.benhNhanId);
+    const bns = await BenhNhan.find({ _id: { $in: bnIds } }).select('hoTen soDienThoai').lean();
+    const bnMap = bns.reduce((m,b)=>{ m[String(b._id)] = b; return m; },{});
+    const sttMap = stts.reduce((m,s)=>{ m[String(s.lichKhamId)] = s; return m; },{});
+    const items = appts.map(a => ({
+      lichKhamId: a._id,
+      benhNhan: bnMap[String(a.benhNhanId)] || null,
+      khungGio: a.khungGio,
+      soThuTu: sttMap[String(a._id)]?.soThuTu || null,
+      trangThai: sttMap[String(a._id)]?.trangThai || 'dang_cho',
+    })).sort((x,y)=>{
+      const sx = x.soThuTu ?? 1e9; const sy = y.soThuTu ?? 1e9;
+      if(sx!==sy) return sx-sy; return (x.khungGio||'').localeCompare(y.khungGio||'');
+    });
+    res.json(items);
+  }catch(err){ return next(err); }
+});
+
 module.exports = router;

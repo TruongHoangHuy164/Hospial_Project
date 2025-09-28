@@ -22,12 +22,28 @@ import Overview from './pages/admin/Overview'
 import Users from './pages/admin/Users'
 import Doctors from './pages/admin/doctor/Index'
 import Clinics from './pages/admin/clinic/Index'
+import StaffIndex from './pages/admin/staff/Index'
+import StaffEdit from './pages/admin/staff/Edit'
 import SiteLayout from './layouts/SiteLayout'
 import RequireDoctor from './pages/doctor/RequireDoctor'
 import DoctorLayout from './pages/doctor/Layout'
 import DoctorDashboard from './pages/doctor/Dashboard'
 import DoctorProfile from './pages/doctor/Profile'
 import DoctorSchedulePage from './pages/doctor/Schedule'
+import RequireReception from './pages/reception/RequireReception'
+import ReceptionLayout from './pages/reception/Layout'
+import ReceptionDashboard from './pages/reception/Dashboard'
+import RequireLab from './pages/lab/RequireLab'
+import LabLayout from './pages/lab/Layout'
+import LabDashboard from './pages/lab/Dashboard'
+import LabOrders from './pages/lab/Orders'
+import LabResults from './pages/lab/Results'
+import Intake from './pages/reception/Intake'
+import NewPatient from './pages/reception/NewPatient'
+import ReceptionAppointments from './pages/reception/Appointments'
+import QueuePage from './pages/reception/Queue'
+import Lookup from './pages/reception/Lookup'
+import ReceptionPrint from './pages/reception/Print'
 
 export default function App() {
   return (
@@ -58,12 +74,30 @@ export default function App() {
         <Route path="users" element={<Users />} />
         <Route path="doctors" element={<Doctors />} />
         <Route path="clinics" element={<Clinics />} />
+        <Route path="staff" element={<StaffIndex />} />
+        <Route path="staff/:id" element={<StaffEdit />} />
       </Route>
 
       <Route path="/doctor" element={<RequireDoctor><DoctorLayout /></RequireDoctor>}>
         <Route path="dashboard" element={<DoctorDashboard />} />
         <Route path="schedule" element={<DoctorSchedulePage />} />
         <Route path="profile" element={<DoctorProfile />} />
+      </Route>
+
+      <Route path="/reception" element={<RequireReception><ReceptionLayout /></RequireReception>}>
+        <Route path="dashboard" element={<ReceptionDashboard />} />
+        <Route path="intake" element={<Intake />} />
+        <Route path="patients/new" element={<NewPatient />} />
+        <Route path="appointments" element={<ReceptionAppointments />} />
+  <Route path="queue" element={<QueuePage />} />
+        <Route path="lookup" element={<Lookup />} />
+        <Route path="print" element={<ReceptionPrint />} />
+      </Route>
+
+      <Route path="/lab" element={<RequireLab><LabLayout /></RequireLab>}>
+        <Route path="dashboard" element={<LabDashboard />} />
+        <Route path="orders" element={<LabOrders />} />
+        <Route path="results" element={<LabResults />} />
       </Route>
     </Routes>
   )

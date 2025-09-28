@@ -50,7 +50,7 @@ router.patch('/:id/role', async (req, res, next) => {
     const { id } = req.params;
     const { role } = req.body || {};
 
-    const allowed = ['user', 'doctor', 'admin'];
+  const allowed = ['user', 'doctor', 'admin', 'reception', 'lab'];
     if (!allowed.includes(role)) {
       return res.status(400).json({ message: 'Vai trò không hợp lệ' });
     }
