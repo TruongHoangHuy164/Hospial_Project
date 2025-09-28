@@ -5,6 +5,8 @@ const ChuyenKhoa = require('../models/ChuyenKhoa');
 const BacSi = require('../models/BacSi');
 const LichKham = require('../models/LichKham');
 const SoThuTu = require('../models/SoThuTu');
+const HoSoKham = require('../models/HoSoKham');
+const CanLamSang = require('../models/CanLamSang');
 const auth = require('../middlewares/auth');
 
 const router = express.Router();
@@ -37,6 +39,76 @@ router.get('/patients', auth, async (req, res, next) => {
     const filter = userId ? { userId } : (phone? { soDienThoai: phone } : {});
     const items = await BenhNhan.find(filter).sort({ updatedAt: -1 }).limit(20);
     return res.json(items);
+  }catch(err){ return next(err); }
+});
+
+// GET /api/booking/my-appointments?page=1&limit=10
+// Return appointments for current user (based on BenhNhan.userId)
+router.get('/my-appointments', auth, async (req, res, next) => {
+  try{
+    const page = Math.max(parseInt(req.query.page||'1',10),1);
+    const limit = Math.min(Math.max(parseInt(req.query.limit||'10',10),1),50);
+    const skip = (page-1)*limit;
+    // Find patients owned by current user
+    const myPatients = await BenhNhan.find({ userId: req.user.id }).select('_id').lean();
+    const ids = myPatients.map(p=>p._id);
+    if(ids.length===0) return res.json({ items: [], total: 0, page, limit, totalPages: 0 });
+    const [items, total] = await Promise.all([
+      LichKham.find({ benhNhanId: { $in: ids } })
+        .sort({ ngayKham: -1, createdAt: -1 })
+        .skip(skip).limit(limit)
+        .populate('bacSiId','hoTen chuyenKhoa')
+        .populate('chuyenKhoaId','ten'),
+      LichKham.countDocuments({ benhNhanId: { $in: ids } })
+    ]);
+    // attach queue numbers
+    const stts = await SoThuTu.find({ lichKhamId: { $in: items.map(i=>i._id) } }).select('lichKhamId soThuTu trangThai').lean();
+    const sttMap = stts.reduce((m,s)=>{ m[String(s.lichKhamId)] = s; return m; },{});
+    const result = items.map(ap => ({
+      _id: ap._id,
+      ngayKham: ap.ngayKham,
+      khungGio: ap.khungGio,
+      trangThai: ap.trangThai,
+      bacSi: ap.bacSiId ? { id: ap.bacSiId._id, hoTen: ap.bacSiId.hoTen, chuyenKhoa: ap.bacSiId.chuyenKhoa } : null,
+      chuyenKhoa: ap.chuyenKhoaId ? { id: ap.chuyenKhoaId._id, ten: ap.chuyenKhoaId.ten } : null,
+      soThuTu: sttMap[String(ap._id)]?.soThuTu || null,
+      sttTrangThai: sttMap[String(ap._id)]?.trangThai || null,
+    }));
+    res.json({ items: result, total, page, limit, totalPages: Math.ceil(total/limit) });
+  }catch(err){ return next(err); }
+});
+
+// GET /api/booking/my-results?page=1&limit=10
+router.get('/my-results', auth, async (req, res, next) => {
+  try{
+    const page = Math.max(parseInt(req.query.page||'1',10),1);
+    const limit = Math.min(Math.max(parseInt(req.query.limit||'10',10),1),50);
+    const skip = (page-1)*limit;
+    // patients of current user
+    const myPatients = await BenhNhan.find({ userId: req.user.id }).select('_id').lean();
+    const pids = myPatients.map(p=>p._id);
+    if(pids.length===0) return res.json({ items: [], total: 0, page, limit, totalPages: 0 });
+    const hoSos = await HoSoKham.find({ benhNhanId: { $in: pids } }).select('_id').lean();
+    const hsIds = hoSos.map(h=>h._id);
+    if(hsIds.length===0) return res.json({ items: [], total: 0, page, limit, totalPages: 0 });
+    const [labs, total] = await Promise.all([
+      CanLamSang.find({ hoSoKhamId: { $in: hsIds } })
+        .sort({ createdAt: -1 })
+        .skip(skip).limit(limit)
+        .populate({ path: 'hoSoKhamId', select: 'benhNhanId bacSiId ngayKham', populate: { path: 'bacSiId', select: 'hoTen chuyenKhoa' } }),
+      CanLamSang.countDocuments({ hoSoKhamId: { $in: hsIds } })
+    ]);
+    const items = labs.map(l => ({
+      _id: l._id,
+      loaiChiDinh: l.loaiChiDinh,
+      trangThai: l.trangThai,
+      ketQua: l.ketQua,
+      ngayThucHien: l.ngayThucHien,
+      createdAt: l.createdAt,
+      bacSi: l.hoSoKhamId?.bacSiId ? { id: l.hoSoKhamId.bacSiId._id, hoTen: l.hoSoKhamId.bacSiId.hoTen, chuyenKhoa: l.hoSoKhamId.bacSiId.chuyenKhoa } : null,
+      ngayKham: l.hoSoKhamId?.ngayKham || null,
+    }));
+    res.json({ items, total, page, limit, totalPages: Math.ceil(total/limit) });
   }catch(err){ return next(err); }
 });
 

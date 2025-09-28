@@ -9,6 +9,7 @@ import Highlights from './components/Highlights'
 import Notices from './components/Notices'
 import AppointmentCTA from './components/AppointmentCTA'
 import BookingPage from './pages/booking/Index'
+import BookingHistory from './pages/booking/History'
 import SpecialtiesPage from './pages/specialties/Index'
 import GuidePage from './pages/guide/Index'
 import Login from './pages/auth/Login'
@@ -44,6 +45,7 @@ import ReceptionAppointments from './pages/reception/Appointments'
 import QueuePage from './pages/reception/Queue'
 import Lookup from './pages/reception/Lookup'
 import ReceptionPrint from './pages/reception/Print'
+import MyResults from './pages/results/Index'
 
 export default function App() {
   return (
@@ -63,6 +65,8 @@ export default function App() {
   <Route path="/guide" element={<GuidePage />} />
   <Route path="/specialties" element={<SpecialtiesPage />} />
   <Route path="/booking" element={<BookingPage />} />
+  <Route path="/booking/history" element={<BookingHistory />} />
+  <Route path="/results" element={<MyResults />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/forgot" element={<ForgotPassword />} />
