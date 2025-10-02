@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom';
 import React from 'react'
 
 const slides = [
@@ -20,7 +21,7 @@ export default function HeroSlider() {
           <h1>{s.title}</h1>
           <p>{s.desc}</p>
           <div className="hero__actions">
-            <a className="btn btn--primary" href="/booking">Đặt lịch ngay</a>
+            <Link className="btn btn--primary" to="/booking">Đặt lịch ngay</Link>
             <a className="btn btn--ghost" href="#">Xem dịch vụ</a>
           </div>
         </div>

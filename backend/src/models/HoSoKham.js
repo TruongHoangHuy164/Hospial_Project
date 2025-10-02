@@ -2,6 +2,7 @@ const mongoose = require('mongoose');
 
 const HoSoKhamSchema = new mongoose.Schema(
   {
+    lichKhamId: { type: mongoose.Schema.Types.ObjectId, ref: 'LichKham', required: true, index: true },
     benhNhanId: { type: mongoose.Schema.Types.ObjectId, ref: 'BenhNhan', required: true, index: true },
     bacSiId: { type: mongoose.Schema.Types.ObjectId, ref: 'BacSi', required: true, index: true },
     ngayKham: { type: Date, default: Date.now },

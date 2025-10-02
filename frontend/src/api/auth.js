@@ -19,51 +19,95 @@ function clearTokens() {
 
 async function request(path, options = {}) {
   const url = `${API_URL}${path}`;
-  const tokens = getTokens();
-  const headers = { 'Content-Type': 'application/json', ...(options.headers || {}) };
-  if (tokens.accessToken) headers['Authorization'] = `Bearer ${tokens.accessToken}`;
+  console.log('Auth API Request:', url);
+  
+  try {
+    const tokens = getTokens();
+    const headers = { 'Content-Type': 'application/json', ...(options.headers || {}) };
+    if (tokens.accessToken) headers['Authorization'] = `Bearer ${tokens.accessToken}`;
 
-  let res = await fetch(url, { ...options, headers });
-  if (res.status === 401 && tokens.refreshToken && path !== '/api/auth/refresh') {
-    // try refresh
-    const r = await fetch(`${API_URL}/api/auth/refresh`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ refreshToken: tokens.refreshToken }),
-    });
-    if (r.ok) {
-      const data = await r.json();
-      setTokens(data);
-      // retry original
-      const retryHeaders = { ...headers, Authorization: `Bearer ${data.accessToken}` };
-      res = await fetch(url, { ...options, headers: retryHeaders });
-    } else {
-      clearTokens();
+    let res = await fetch(url, { ...options, headers });
+    
+    if (res.status === 401 && tokens.refreshToken && path !== '/api/auth/refresh') {
+      console.log('Auth: Attempting token refresh...');
+      // try refresh
+      const r = await fetch(`${API_URL}/api/auth/refresh`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ refreshToken: tokens.refreshToken }),
+      });
+      if (r.ok) {
+        const data = await r.json();
+        setTokens(data);
+        // retry original
+        const retryHeaders = { ...headers, Authorization: `Bearer ${data.accessToken}` };
+        res = await fetch(url, { ...options, headers: retryHeaders });
+      } else {
+        console.log('Auth: Token refresh failed, clearing tokens');
+        clearTokens();
+      }
     }
+    
+    console.log('Auth API Response:', res.status, res.statusText);
+    return res;
+  } catch (error) {
+    console.error('Auth API Network Error:', error);
+    throw new Error('Không thể kết nối đến server. Vui lòng kiểm tra kết nối mạng và đảm bảo server đang chạy.');
   }
-  return res;
 }
 
 export async function register(name, email, password) {
-  const res = await request('/api/auth/register', {
-    method: 'POST',
-    body: JSON.stringify({ name, email, password }),
-  });
-  if (!res.ok) throw await res.json();
-  const data = await res.json();
-  setTokens(data);
-  return data.user;
+  try {
+    console.log('Auth: Attempting registration for', email);
+    const res = await request('/api/auth/register', {
+      method: 'POST',
+      body: JSON.stringify({ name, email, password }),
+    });
+    
+    if (!res.ok) {
+      const errorData = await res.json();
+      console.error('Auth: Registration failed:', errorData);
+      throw errorData;
+    }
+    
+    const data = await res.json();
+    setTokens(data);
+    console.log('Auth: Registration successful');
+    return data.user;
+  } catch (error) {
+    console.error('Auth: Registration error:', error);
+    if (error.message && error.message.includes('kết nối')) {
+      throw error;
+    }
+    throw error;
+  }
 }
 
 export async function login(email, password) {
-  const res = await request('/api/auth/login', {
-    method: 'POST',
-    body: JSON.stringify({ email, password }),
-  });
-  if (!res.ok) throw await res.json();
-  const data = await res.json();
-  setTokens(data);
-  return data.user;
+  try {
+    console.log('Auth: Attempting login for', email);
+    const res = await request('/api/auth/login', {
+      method: 'POST',
+      body: JSON.stringify({ email, password }),
+    });
+    
+    if (!res.ok) {
+      const errorData = await res.json();
+      console.error('Auth: Login failed:', errorData);
+      throw errorData;
+    }
+    
+    const data = await res.json();
+    setTokens(data);
+    console.log('Auth: Login successful');
+    return data.user;
+  } catch (error) {
+    console.error('Auth: Login error:', error);
+    if (error.message && error.message.includes('kết nối')) {
+      throw error;
+    }
+    throw error;
+  }
 }
 
 export async function logout() {

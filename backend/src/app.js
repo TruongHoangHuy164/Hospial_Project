@@ -16,6 +16,7 @@ const doctorSelfRouter = require('./routes/doctorSelf');
 const bookingRouter = require('./routes/booking');
 const labRouter = require('./routes/lab');
 const staffRouter = require('./routes/staff');
+const patientProfilesRouter = require('./routes/patientProfiles');
 
 const app = express();
 
@@ -33,7 +34,8 @@ app.use('/api/auth', authRouter);
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 
-app.use('/api/users', auth, authorize('admin'), usersRouter);
+// User routes - some endpoints need different permissions
+app.use('/api/users', usersRouter);
 app.use('/api/admin', auth, authorize('admin'), adminRouter);
 app.use('/api/doctors', auth, authorize('admin'), doctorsRouter);
 app.use('/api/staff', auth, authorize('admin'), staffRouter);
@@ -43,6 +45,7 @@ app.use('/api/clinics', auth, authorize('admin'), clinicsRouter);
 app.use('/api/uploads', auth, authorize('admin','doctor'), uploadsRouter);
 app.use('/api/specialties', auth, authorize('admin'), specialtiesRouter);
 app.use('/api/booking', bookingRouter);
+app.use('/api/patient-profiles', patientProfilesRouter);
 
 // Protected sample route
 app.get('/api/profile', auth, (req, res) => {

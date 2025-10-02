@@ -25,15 +25,25 @@ export function AuthProvider({ children }) {
   }, []);
 
   const signIn = async (email, password) => {
-    const u = await apiLogin(email, password);
-    setUser(u);
-    return u;
+    try {
+      const u = await apiLogin(email, password);
+      setUser(u);
+      return u;
+    } catch (error) {
+      console.error('AuthContext: Sign in failed:', error);
+      throw error;
+    }
   };
 
   const signUp = async (name, email, password) => {
-    const u = await apiRegister(name, email, password);
-    setUser(u);
-    return u;
+    try {
+      const u = await apiRegister(name, email, password);
+      setUser(u);
+      return u;
+    } catch (error) {
+      console.error('AuthContext: Sign up failed:', error);
+      throw error;
+    }
   };
 
   const signOut = async () => {

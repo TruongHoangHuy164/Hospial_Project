@@ -8,6 +8,7 @@ const LichKham = require('../models/LichKham');
 const SoThuTu = require('../models/SoThuTu');
 const HoSoKham = require('../models/HoSoKham');
 const CanLamSang = require('../models/CanLamSang');
+const PatientProfile = require('../models/PatientProfile');
 const auth = require('../middlewares/auth');
 
 const router = express.Router();
@@ -44,32 +45,39 @@ router.get('/patients', auth, async (req, res, next) => {
 });
 
 // GET /api/booking/my-appointments?page=1&limit=10
-// Return appointments for current user (based on BenhNhan.userId)
+// Return appointments for current user (based on LichKham.nguoiDatId)
 router.get('/my-appointments', auth, async (req, res, next) => {
   try{
     const page = Math.max(parseInt(req.query.page||'1',10),1);
     const limit = Math.min(Math.max(parseInt(req.query.limit||'10',10),1),50);
     const skip = (page-1)*limit;
-    // Find patients owned by current user
-    const myPatients = await BenhNhan.find({ userId: req.user.id }).select('_id').lean();
-    const ids = myPatients.map(p=>p._id);
-    if(ids.length===0) return res.json({ items: [], total: 0, page, limit, totalPages: 0 });
+    
+    const filter = { nguoiDatId: req.user.id };
+
     const [items, total] = await Promise.all([
-      LichKham.find({ benhNhanId: { $in: ids } })
+      LichKham.find(filter)
         .sort({ ngayKham: -1, createdAt: -1 })
         .skip(skip).limit(limit)
         .populate('bacSiId','hoTen chuyenKhoa')
-        .populate('chuyenKhoaId','ten'),
-      LichKham.countDocuments({ benhNhanId: { $in: ids } })
+        .populate('chuyenKhoaId','ten')
+        .populate('benhNhanId', 'hoTen') // Populate for self-booking
+        .populate('hoSoBenhNhanId', 'hoTen'), // Populate for relative-booking
+      LichKham.countDocuments(filter)
     ]);
+
     // attach queue numbers
     const stts = await SoThuTu.find({ lichKhamId: { $in: items.map(i=>i._id) } }).select('lichKhamId soThuTu trangThai').lean();
     const sttMap = stts.reduce((m,s)=>{ m[String(s.lichKhamId)] = s; return m; },{});
+
     const result = items.map(ap => ({
       _id: ap._id,
       ngayKham: ap.ngayKham,
       khungGio: ap.khungGio,
       trangThai: ap.trangThai,
+      // Determine patient name from either populated field
+      benhNhan: {
+        hoTen: ap.hoSoBenhNhanId ? ap.hoSoBenhNhanId.hoTen : (ap.benhNhanId ? ap.benhNhanId.hoTen : 'N/A')
+      },
       bacSi: ap.bacSiId ? { id: ap.bacSiId._id, hoTen: ap.bacSiId.hoTen, chuyenKhoa: ap.bacSiId.chuyenKhoa } : null,
       chuyenKhoa: ap.chuyenKhoaId ? { id: ap.chuyenKhoaId._id, ten: ap.chuyenKhoaId.ten } : null,
       soThuTu: sttMap[String(ap._id)]?.soThuTu || null,
@@ -160,17 +168,92 @@ router.get('/availability', async (req, res, next) => {
 });
 
 // POST /api/booking/appointments - create appointment
-router.post('/appointments', async (req, res, next) => {
+router.post('/appointments', auth, async (req, res, next) => {
   try{
-    const { benhNhanId, bacSiId, chuyenKhoaId, date, khungGio } = req.body || {};
-    if(!benhNhanId || !bacSiId || !chuyenKhoaId || !date || !khungGio) return res.status(400).json({ message: 'Thiếu dữ liệu' });
+    const { benhNhanId, hoSoBenhNhanId, bacSiId, chuyenKhoaId, date, khungGio } = req.body || {};
+    const nguoiDatId = req.user.id;
+
+    console.log('Booking request data:', { benhNhanId, hoSoBenhNhanId, bacSiId, chuyenKhoaId, date, khungGio, nguoiDatId });
+
+    if ((!benhNhanId && !hoSoBenhNhanId) || (benhNhanId && hoSoBenhNhanId)) {
+      return res.status(400).json({ message: 'Cần cung cấp `benhNhanId` (cho bản thân) hoặc `hoSoBenhNhanId` (cho người thân).' });
+    }
+    if(!bacSiId || !chuyenKhoaId || !date || !khungGio) return res.status(400).json({ message: 'Thiếu dữ liệu bắt buộc (bác sĩ, chuyên khoa, ngày, giờ).' });
+    
     const d = new Date(date);
     if(isNaN(d.getTime())) return res.status(400).json({ message: 'date không hợp lệ' });
     const dayStart = startOfDay(d);
+
+    const appointmentData = {
+      nguoiDatId,
+      bacSiId,
+      chuyenKhoaId,
+      ngayKham: dayStart,
+      khungGio,
+      trangThai: 'cho_thanh_toan'
+    };
+
+    if (benhNhanId) {
+      // Đặt lịch cho bản thân (sử dụng BenhNhan model)
+      console.log('Booking for self with benhNhanId:', benhNhanId);
+      appointmentData.benhNhanId = benhNhanId;
+    } else if (hoSoBenhNhanId) {
+      // Đặt lịch cho người thân (sử dụng PatientProfile model)
+      console.log('Booking for relative with hoSoBenhNhanId:', hoSoBenhNhanId);
+      appointmentData.hoSoBenhNhanId = hoSoBenhNhanId;
+      
+      // Tìm PatientProfile
+      const profile = await PatientProfile.findById(hoSoBenhNhanId);
+      if (!profile) {
+        console.error('PatientProfile not found:', hoSoBenhNhanId);
+        return res.status(404).json({ message: 'Không tìm thấy hồ sơ người thân' });
+      }
+      
+      console.log('Found PatientProfile:', {
+        id: profile._id,
+        hoTen: profile.hoTen,
+        ngaySinh: profile.ngaySinh,
+        gioiTinh: profile.gioiTinh
+      });
+      
+      // Tạo BenhNhan từ PatientProfile data
+      const gioiTinhMapping = {
+        'Nam': 'nam',
+        'Nữ': 'nu', 
+        'Khác': 'khac'
+      };
+      
+      const benhNhanData = {
+        userId: nguoiDatId,
+        hoTen: profile.hoTen,
+        ngaySinh: profile.ngaySinh,
+        gioiTinh: gioiTinhMapping[profile.gioiTinh] || 'khac',
+        soDienThoai: profile.soDienThoai,
+        diaChi: profile.diaChi,
+        maBHYT: profile.cccd // Use CCCD as temporary insurance number
+      };
+      
+      console.log('Creating BenhNhan with data:', benhNhanData);
+      
+      try {
+        const benhNhan = await BenhNhan.create(benhNhanData);
+        console.log('Created BenhNhan successfully:', benhNhan._id);
+        appointmentData.benhNhanId = benhNhan._id;
+        console.log('Assigned benhNhanId to appointmentData:', appointmentData.benhNhanId);
+      } catch (createError) {
+        console.error('Error creating BenhNhan:', createError);
+        return res.status(500).json({ message: 'Lỗi tạo hồ sơ bệnh nhân', error: createError.message });
+      }
+    }
+
+    console.log('Final appointment data:', appointmentData);
+
     // Save as exact date with time start-of-day; store khungGio separately
-    const lk = await LichKham.create({ benhNhanId, bacSiId, chuyenKhoaId, ngayKham: dayStart, khungGio, trangThai: 'cho_thanh_toan' });
+    const lk = await LichKham.create(appointmentData);
+    console.log('Created appointment:', lk._id);
     res.status(201).json(lk);
   }catch(err){
+    console.error('Booking error:', err);
     if(err && err.code === 11000){
       return res.status(409).json({ message: 'Khung giờ đã được đặt' });
     }
@@ -184,15 +267,30 @@ router.post('/appointments/:id/pay', async (req, res, next) => {
     const { id } = req.params;
     const appt = await LichKham.findById(id);
     if(!appt) return res.status(404).json({ message: 'Không tìm thấy lịch khám' });
+    
+    // Ensure we have a benhNhanId for queue generation
+    if (!appt.benhNhanId) {
+      return res.status(400).json({ message: 'Lịch khám thiếu thông tin bệnh nhân' });
+    }
+    
     appt.trangThai = 'da_thanh_toan';
     await appt.save();
 
     // Generate queue number for that date and doctor
     const dayStart = startOfDay(appt.ngayKham);
     const dayEnd = endOfDay(appt.ngayKham);
-    const count = await SoThuTu.countDocuments({ lichKhamId: { $exists: true }, createdAt: { $gte: dayStart, $lt: dayEnd }, benhNhanId: appt.benhNhanId });
+    const count = await SoThuTu.countDocuments({ 
+      lichKhamId: { $exists: true }, 
+      createdAt: { $gte: dayStart, $lt: dayEnd }, 
+      benhNhanId: appt.benhNhanId 
+    });
     const so = count + 1;
-    const stt = await SoThuTu.create({ lichKhamId: appt._id, benhNhanId: appt.benhNhanId, soThuTu: so, trangThai: 'dang_cho' });
+    const stt = await SoThuTu.create({ 
+      lichKhamId: appt._id, 
+      benhNhanId: appt.benhNhanId, 
+      soThuTu: so, 
+      trangThai: 'dang_cho' 
+    });
     res.json({ lichKham: appt, soThuTu: stt });
   }catch(err){ return next(err); }
 });

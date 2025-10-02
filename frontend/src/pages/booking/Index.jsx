@@ -1,21 +1,83 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState, useCallback } from 'react';
+import { useAuth } from '../../context/AuthContext';
+import { getPatientProfiles } from '../../api/patientProfiles';
+import { Link, useNavigate } from 'react-router-dom';
+import { toast } from 'react-toastify';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
 export default function BookingPage(){
+  const { user, isAuthenticated } = useAuth();
+  const navigate = useNavigate();
+
   const [step, setStep] = useState(1);
-  const [patient, setPatient] = useState({ hoTen:'', ngaySinh:'', gioiTinh:'khac', soDienThoai:'', diaChi:'', maBHYT:'' });
-  const [createdPatient, setCreatedPatient] = useState(null);
+  
+  // Step 1 state
+  const [profiles, setProfiles] = useState([]);
+  const [selfProfile, setSelfProfile] = useState(null);
+  const [selectedProfileId, setSelectedProfileId] = useState(''); // 'self' or profile._id
+  const [loadingProfiles, setLoadingProfiles] = useState(true);
+
+  // Step 2 state
   const [specialties, setSpecialties] = useState([]);
   const [chuyenKhoaId, setChuyenKhoaId] = useState('');
   const [date, setDate] = useState('');
+
+  // Step 3 state
   const [availability, setAvailability] = useState(null);
   const [selected, setSelected] = useState({ bacSiId:'', khungGio:'' });
+  
+  // Step 4 & 5 state
   const [appointment, setAppointment] = useState(null);
   const [ticket, setTicket] = useState(null);
   const [loadingPay, setLoadingPay] = useState(false);
 
   const headers = useMemo(()=>({ 'Content-Type':'application/json', Authorization: `Bearer ${localStorage.getItem('accessToken')||''}` }), []);
+
+  // Redirect if not logged in
+  useEffect(() => {
+    if (!isAuthenticated) {
+      toast.info('Vui lòng đăng nhập để đặt lịch khám.');
+      navigate('/login?redirect=/booking');
+    }
+  }, [isAuthenticated, navigate]);
+
+  // Fetch user's own profile and relative profiles
+  const loadProfiles = useCallback(async () => {
+    if (!isAuthenticated) return;
+    setLoadingProfiles(true);
+    try {
+      const [profilesRes, selfRes] = await Promise.all([
+        getPatientProfiles(),
+        fetch(`${API_URL}/api/users/my-patient-profile`, { headers })
+      ]);
+      
+      setProfiles(profilesRes.data);
+
+      if (selfRes.ok) {
+        const selfData = await selfRes.json();
+        console.log('Self patient profile:', selfData);
+        setSelfProfile(selfData);
+        setSelectedProfileId('self'); // Default to self
+      } else {
+        console.log('No self patient profile found:', selfRes.status);
+        // If user has no self-profile, default to first relative if available
+        if(profilesRes.data.length > 0) {
+          setSelectedProfileId(profilesRes.data[0]._id);
+        }
+      }
+
+    } catch (error) {
+      toast.error('Không thể tải hồ sơ của bạn.');
+    } finally {
+      setLoadingProfiles(false);
+    }
+  }, [isAuthenticated, headers]);
+
+  useEffect(() => {
+    loadProfiles();
+  }, [loadProfiles]);
+
 
   // Fast handle MoMo return as soon as component mounts
   useEffect(()=>{
@@ -53,17 +115,6 @@ export default function BookingPage(){
       }
     }catch{}
   },[]);
-
-  async function savePatient(){
-    try{
-      if(!patient.hoTen) return alert('Vui lòng nhập họ tên');
-      const res = await fetch(`${API_URL}/api/booking/patients`, { method:'POST', headers, body: JSON.stringify(patient) });
-      const json = await res.json();
-      if(!res.ok) throw json;
-      setCreatedPatient(json);
-      setStep(2);
-    }catch(e){ alert(e?.message || 'Lưu hồ sơ bệnh nhân thất bại'); }
-  }
 
   async function loadSpecialties(){
     const res = await fetch(`${API_URL}/api/booking/specialties`);
@@ -130,15 +181,50 @@ export default function BookingPage(){
 
   async function createAppointment(){
     try{
-      if(!createdPatient?._id) return alert('Thiếu hồ sơ bệnh nhân');
       if(!selected.bacSiId || !selected.khungGio) return alert('Chọn bác sĩ và khung giờ');
-      const payload = { benhNhanId: createdPatient._id, bacSiId: selected.bacSiId, chuyenKhoaId, date, khungGio: selected.khungGio };
+      
+      // Ensure we have a profile selected
+      if (!selectedProfileId) {
+        return toast.error('Vui lòng chọn hồ sơ để đặt lịch.');
+      }
+      
+      const payload = { 
+        bacSiId: selected.bacSiId, 
+        chuyenKhoaId, 
+        date, 
+        khungGio: selected.khungGio 
+      };
+
+      console.log('Frontend: Creating appointment with selectedProfileId:', selectedProfileId);
+
+      // If a relative's profile is selected, use hoSoBenhNhanId
+      if (selectedProfileId && selectedProfileId !== 'self') {
+        payload.hoSoBenhNhanId = selectedProfileId;
+        console.log('Frontend: Booking for relative profile:', selectedProfileId);
+      } else if (selectedProfileId === 'self') {
+        // Booking for self - use benhNhanId
+        if (!selfProfile?._id) {
+          return toast.error('Không tìm thấy hồ sơ bệnh nhân của bạn.');
+        }
+        payload.benhNhanId = selfProfile._id;
+        console.log('Frontend: Booking for self with benhNhanId:', selfProfile._id);
+      }
+
+      console.log('Frontend: Final payload:', payload);
+
       const res = await fetch(`${API_URL}/api/booking/appointments`, { method:'POST', headers, body: JSON.stringify(payload) });
       const json = await res.json();
-      if(!res.ok) throw json;
+      if(!res.ok) {
+        console.error('Frontend: Booking failed:', json);
+        throw json;
+      }
+      console.log('Frontend: Booking success:', json);
       setAppointment(json);
       setStep(4);
-    }catch(e){ alert(e?.message || 'Đặt lịch thất bại'); }
+    }catch(e){ 
+      console.error('Frontend: Booking error:', e);
+      alert(e?.message || 'Đặt lịch thất bại'); 
+    }
   }
 
   async function pay(){
@@ -171,6 +257,11 @@ export default function BookingPage(){
     }, 2000);
   }
 
+  const handleNextStep1 = () => {
+    // No profile selected is OK, it will default to the user themselves.
+    setStep(2);
+  }
+
   return (
     <div className="container py-4" style={{maxWidth: 900}}>
       <h3 className="mb-3">Đặt lịch khám bệnh</h3>
@@ -180,18 +271,58 @@ export default function BookingPage(){
 
       {step===1 && (
         <div className="card shadow-sm">
-          <div className="card-header">1. Nhập hồ sơ khám bệnh</div>
-          <div className="card-body">
-            <div className="row g-2">
-              <div className="col-md-6"><label className="form-label">Họ tên</label><input className="form-control" value={patient.hoTen} onChange={e=>setPatient({...patient, hoTen:e.target.value})}/></div>
-              <div className="col-md-3"><label className="form-label">Ngày sinh</label><input type="date" className="form-control" value={patient.ngaySinh} onChange={e=>setPatient({...patient, ngaySinh:e.target.value})}/></div>
-              <div className="col-md-3"><label className="form-label">Giới tính</label><select className="form-select" value={patient.gioiTinh} onChange={e=>setPatient({...patient, gioiTinh:e.target.value})}><option value="nam">Nam</option><option value="nu">Nữ</option><option value="khac">Khác</option></select></div>
-              <div className="col-md-6"><label className="form-label">Số điện thoại</label><input className="form-control" value={patient.soDienThoai} onChange={e=>setPatient({...patient, soDienThoai:e.target.value})}/></div>
-              <div className="col-md-6"><label className="form-label">Địa chỉ</label><input className="form-control" value={patient.diaChi} onChange={e=>setPatient({...patient, diaChi:e.target.value})}/></div>
-              <div className="col-md-6"><label className="form-label">Mã BHYT</label><input className="form-control" value={patient.maBHYT} onChange={e=>setPatient({...patient, maBHYT:e.target.value})}/></div>
-            </div>
+          <div className="card-header d-flex justify-content-between align-items-center">
+            <span>1. Chọn hồ sơ bệnh nhân</span>
+            <Link to="/user/profiles" className="btn btn-sm btn-outline-secondary">
+              <i className="bi bi-pencil-square me-1"></i>
+              Quản lý hồ sơ
+            </Link>
           </div>
-          <div className="card-footer d-flex justify-content-end"><button className="btn btn-primary" onClick={savePatient}>Lưu và tiếp tục</button></div>
+          <div className="card-body">
+            {loadingProfiles ? (
+              <p>Đang tải hồ sơ...</p>
+            ) : (
+              <div className="list-group">
+                {selfProfile && (
+                  <label className={`list-group-item list-group-item-action ${selectedProfileId === 'self' ? 'active' : ''}`}>
+                    <input 
+                      type="radio" 
+                      name="profileSelection" 
+                      className="form-check-input me-2" 
+                      value="self"
+                      checked={selectedProfileId === 'self'}
+                      onChange={(e) => setSelectedProfileId(e.target.value)}
+                    />
+                    <strong>Bản thân:</strong> {selfProfile.hoTen} ({new Date(selfProfile.ngaySinh).toLocaleDateString('vi-VN')})
+                  </label>
+                )}
+                {profiles.map(profile => (
+                  <label key={profile._id} className={`list-group-item list-group-item-action ${selectedProfileId === profile._id ? 'active' : ''}`}>
+                     <input 
+                      type="radio" 
+                      name="profileSelection" 
+                      className="form-check-input me-2" 
+                      value={profile._id}
+                      checked={selectedProfileId === profile._id}
+                      onChange={(e) => setSelectedProfileId(e.target.value)}
+                    />
+                    <strong>{profile.quanHe}:</strong> {profile.hoTen} ({new Date(profile.ngaySinh).toLocaleDateString('vi-VN')})
+                  </label>
+                ))}
+                {!selfProfile && profiles.length === 0 && (
+                  <p className="text-center text-muted p-3">
+                    Bạn chưa có hồ sơ nào. <br/>
+                    Vui lòng vào <Link to="/user/profiles">Quản lý hồ sơ</Link> để thêm hồ sơ người thân, hoặc cập nhật thông tin cá nhân để tạo hồ sơ cho chính bạn.
+                  </p>
+                )}
+              </div>
+            )}
+          </div>
+          <div className="card-footer d-flex justify-content-end">
+            <button className="btn btn-primary" onClick={handleNextStep1} disabled={loadingProfiles}>
+              Tiếp tục
+            </button>
+          </div>
         </div>
       )}
 

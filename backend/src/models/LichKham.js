@@ -2,6 +2,10 @@ const mongoose = require('mongoose');
 
 const LichKhamSchema = new mongoose.Schema(
   {
+    // ID của người đặt lịch (tài khoản user)
+    nguoiDatId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true, index: true },
+    // ID của hồ sơ bệnh nhân (có thể là của người đặt hoặc người thân)
+    hoSoBenhNhanId: { type: mongoose.Schema.Types.ObjectId, ref: 'PatientProfile', required: true, index: true },
     benhNhanId: { type: mongoose.Schema.Types.ObjectId, ref: 'BenhNhan', required: true, index: true },
     bacSiId: { type: mongoose.Schema.Types.ObjectId, ref: 'BacSi', required: true, index: true },
     chuyenKhoaId: { type: mongoose.Schema.Types.ObjectId, ref: 'ChuyenKhoa', required: true, index: true },

@@ -24,6 +24,8 @@ export default function Navbar() {
           </>
         ) : (
           <>
+            {/* <Link to="/user/my-appointments" className="nav__item"><i className="bi bi-calendar-check"></i> Lịch khám của tôi</Link> */}
+            <Link to="/user/profiles" className="nav__item"><i className="bi bi-people"></i> Hồ sơ người thân</Link>
             <span className="nav__item">Xin chào, <strong>{user?.name || user?.email}</strong></span>
             <button className="nav__item btn btn-link p-0" onClick={signOut}>
               <i className="bi bi-box-arrow-right"></i> Đăng xuất

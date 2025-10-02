@@ -46,6 +46,8 @@ import QueuePage from './pages/reception/Queue'
 import Lookup from './pages/reception/Lookup'
 import ReceptionPrint from './pages/reception/Print'
 import MyResults from './pages/results/Index'
+import PatientProfiles from './pages/user/PatientProfiles'
+import MyAppointments from './pages/user/MyAppointments'
 
 export default function App() {
   return (
@@ -71,6 +73,8 @@ export default function App() {
         <Route path="/register" element={<Register />} />
         <Route path="/forgot" element={<ForgotPassword />} />
         <Route path="/reset" element={<ResetPassword />} />
+        <Route path="/user/profiles" element={<PatientProfiles />} />
+        <Route path="/user/my-appointments" element={<MyAppointments />} />
       </Route>
 
       <Route path="/admin" element={<RequireAdmin><AdminLayout /></RequireAdmin>}>

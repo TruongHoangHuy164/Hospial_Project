@@ -1,10 +1,13 @@
 const express = require('express');
 const User = require('../models/User');
+const BenhNhan = require('../models/BenhNhan');
+const auth = require('../middlewares/auth');
+const authorize = require('../middlewares/authorize');
 
 const router = express.Router();
 
 // GET /api/users?page=1&limit=10&q=abc&role=admin
-router.get('/', async (req, res, next) => {
+router.get('/', auth, authorize('admin'), async (req, res, next) => {
   try {
     const page = Math.max(parseInt(req.query.page || '1', 10), 1);
     const limit = Math.min(Math.max(parseInt(req.query.limit || '10', 10), 1), 100);
@@ -42,10 +45,43 @@ router.get('/', async (req, res, next) => {
   }
 });
 
+// GET /api/users/my-patient-profile - get current user's BenhNhan profile for self-booking
+router.get('/my-patient-profile', auth, async (req, res, next) => {
+  try {
+    const userId = req.user.id;
+    
+    // Find the first BenhNhan record for this user (self profile)
+    let benhNhan = await BenhNhan.findOne({ userId }).sort({ createdAt: -1 });
+    
+    if (!benhNhan) {
+      // If no BenhNhan profile exists, create a basic one from User data
+      const user = await User.findById(userId);
+      if (!user) {
+        return res.status(404).json({ message: 'Người dùng không tồn tại' });
+      }
+      
+      // Create basic BenhNhan profile from User
+      benhNhan = await BenhNhan.create({
+        userId: userId,
+        hoTen: user.name || 'Chưa cập nhật',
+        gioiTinh: 'khac', // Default gender
+        soDienThoai: '', // User model doesn't have phone, will be updated later
+        // ngaySinh and diaChi will be null until user updates
+      });
+      
+      console.log('Created basic BenhNhan profile for user:', userId, benhNhan._id);
+    }
+    
+    return res.json(benhNhan);
+  } catch (err) {
+    return next(err);
+  }
+});
+
 module.exports = router;
 
 // PATCH /api/users/:id/role
-router.patch('/:id/role', async (req, res, next) => {
+router.patch('/:id/role', auth, authorize('admin'), async (req, res, next) => {
   try {
     const { id } = req.params;
     const { role } = req.body || {};

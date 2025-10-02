@@ -75,11 +75,83 @@ body { font-family: system-ui, Arial, Helvetica, sans-serif; background: var(--b
 .social { display: inline-flex; width: 28px; height: 28px; align-items: center; justify-content: center; border: 1px solid var(--line); border-radius: 6px; background: #fff; }
 
 /* Buttons */
-.btn { display: inline-flex; align-items: center; gap: 6px; text-decoration: none; padding: 10px 14px; border-radius: 8px; border: 1px solid transparent; }
-.btn--primary { background: var(--primary); color: #fff; border-color: var(--primary); }
+.btn { display: inline-flex; align-items: center; gap: 6px; text-decoration: none; padding: 10px 14px; border-radius: 8px; border: 1px solid transparent; cursor: pointer; font-weight: 500; }
+.btn--primary { background: var(--primary); color: #fff; border-color: var(--primary); box-shadow: 0 8px 16px rgba(14, 165, 233, 0.25); transition: transform 0.15s ease, box-shadow 0.15s ease; }
+.btn--primary:hover { transform: translateY(-1px); box-shadow: 0 12px 22px rgba(14, 165, 233, 0.28); }
 .btn--ghost { background: transparent; color: var(--primary-dark); border: 1px solid var(--line); }
+.btn--ghost:hover { border-color: var(--primary); color: var(--primary); }
 .btn--outline { background: transparent; color: var(--primary-dark); border: 1px solid var(--primary-dark); }
+.btn--danger { background: #fee2e2; color: #b91c1c; border-color: #fecaca; }
+.btn--danger:hover { background: #fecaca; }
+.btn--secondary { background: #f8fafc; color: var(--muted); border-color: var(--line); }
 .btn--lg { padding: 12px 18px; font-weight: 600; }
+.btn-sm { padding: 6px 10px; font-size: 13px; border-radius: 6px; }
+
+/* Legacy button aliases */
+.btn-primary { background: var(--primary); color: #fff; border-color: var(--primary); box-shadow: 0 8px 16px rgba(14, 165, 233, 0.18); transition: transform 0.15s ease, box-shadow 0.15s ease; }
+.btn-primary:hover { transform: translateY(-1px); box-shadow: 0 12px 22px rgba(14, 165, 233, 0.24); }
+.btn-secondary { background: #f8fafc; color: var(--muted); border: 1px solid var(--line); }
+.btn-secondary:hover { border-color: var(--primary); color: var(--primary-dark); }
+.btn-outline-primary { background: transparent; color: var(--primary-dark); border: 1px solid var(--primary); }
+.btn-outline-primary:hover { background: rgba(14, 165, 233, 0.12); color: var(--primary-dark); }
+.btn-outline-secondary { background: transparent; color: var(--muted); border: 1px solid var(--line); }
+.btn-outline-secondary:hover { border-color: var(--primary); color: var(--primary-dark); }
+.btn-outline-danger { background: transparent; color: #b91c1c; border: 1px solid #fca5a5; }
+.btn-outline-danger:hover { background: #fee2e2; }
+
+.btn + .btn { margin-left: 8px; }
+
+/* Patient profile management */
+.profile-page { max-width: 960px; margin: 0 auto; padding: 24px 20px 60px; }
+.profile-page__head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; flex-wrap: wrap; gap: 12px; }
+.profile-page__title { font-size: 28px; font-weight: 700; margin: 0; color: var(--primary-dark); }
+.profile-page__actions { display: flex; align-items: center; gap: 12px; }
+
+.profile-alert { padding: 12px 16px; border-radius: 10px; border: 1px solid transparent; margin-bottom: 20px; display: flex; align-items: center; gap: 12px; font-weight: 500; }
+.profile-alert--success { background: #ecfdf5; border-color: #bbf7d0; color: #047857; }
+.profile-alert--error { background: #fef2f2; border-color: #fecaca; color: #b91c1c; }
+
+.profile-form-card { background: #fff; border: 1px solid var(--line); border-radius: 16px; padding: 24px 28px; box-shadow: 0 16px 40px rgba(15, 23, 42, 0.08); margin-bottom: 28px; }
+.profile-form__title { font-size: 20px; font-weight: 600; margin: 0 0 18px; color: var(--fg); }
+.profile-form__grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px 22px; }
+.profile-form__field { display: flex; flex-direction: column; gap: 6px; }
+.profile-form__field--wide { grid-column: span 2; }
+.profile-form__field--full { grid-column: 1 / -1; }
+.profile-form__label { font-size: 14px; font-weight: 600; color: var(--muted); }
+.profile-form__input,
+.profile-form__select { padding: 10px 12px; border-radius: 10px; border: 1px solid var(--line); font-size: 14px; background: #f8fafc; transition: border-color 0.15s ease, box-shadow 0.15s ease; }
+.profile-form__input:focus,
+.profile-form__select:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.15); background: #fff; }
+.profile-form__error { color: #dc2626; font-size: 13px; font-weight: 500; }
+.profile-form__actions { display: flex; justify-content: flex-end; gap: 12px; margin-top: 24px; }
+
+.profile-list { display: grid; gap: 18px; margin-top: 10px; }
+.profile-card { background: #fff; border: 1px solid var(--line); border-radius: 14px; padding: 20px 24px; box-shadow: 0 12px 28px rgba(15, 23, 42, 0.06); display: flex; justify-content: space-between; gap: 18px; flex-wrap: wrap; }
+.profile-card__meta { display: grid; gap: 6px; min-width: 220px; }
+.profile-card__name { font-size: 20px; font-weight: 700; margin: 0; color: var(--primary-dark); }
+.profile-card__code { margin: 0; font-size: 13px; letter-spacing: 0.04em; text-transform: uppercase; color: var(--muted); }
+.profile-card__field { margin: 0; font-size: 14px; color: var(--fg); }
+.profile-card__actions { display: flex; align-items: center; gap: 10px; }
+.profile-card__actions .btn + .btn { margin-left: 0; }
+
+.profile-empty { background: #f8fafc; border: 1px dashed var(--line); border-radius: 14px; padding: 32px; text-align: center; color: var(--muted); font-size: 15px; }
+
+.profile-loading { color: var(--muted); font-size: 15px; margin: 10px 0; }
+
+@media (max-width: 1024px) {
+  .profile-form__grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .profile-form__field--wide,
+  .profile-form__field--full { grid-column: span 2; }
+}
+
+@media (max-width: 700px) {
+  .profile-page { padding: 16px 14px 40px; }
+  .profile-form-card { padding: 20px; }
+  .profile-form__grid { grid-template-columns: 1fr; }
+  .profile-form__field--wide,
+  .profile-form__field--full { grid-column: auto; }
+  .profile-card { padding: 18px; }
+}
 
 /* Responsive */
 @media (max-width: 900px) {
