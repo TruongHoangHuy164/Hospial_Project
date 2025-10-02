@@ -83,6 +83,22 @@ export default function Doctors() {
     })();
   }, []);
 
+  // Filter clinics by selected specialty in the form
+  const getClinicSpec = (c) => (c?.chuyenKhoaId?.ten) || c?.chuyenKhoa || '';
+  const filteredClinics = useMemo(() => {
+    if (!form.chuyenKhoa) return clinics;
+    return clinics.filter(c => getClinicSpec(c) === form.chuyenKhoa);
+  }, [clinics, form.chuyenKhoa]);
+
+  // When specialty changes, clear clinic if it doesn't belong to that specialty
+  useEffect(() => {
+    if (!form.chuyenKhoa) return;
+    const current = clinics.find(x => x._id === form.phongKhamId);
+    if (current && getClinicSpec(current) !== form.chuyenKhoa) {
+      setForm(f => ({ ...f, phongKhamId: '' }));
+    }
+  }, [form.chuyenKhoa, clinics]);
+
   function openCreate() {
     setEditing(null);
     setForm({
@@ -308,7 +324,7 @@ export default function Doctors() {
                         }));
                       }} required>
                         <option value="">-- Chọn phòng khám --</option>
-                        {clinics.map(c => <option key={c._id} value={c._id}>{c.tenPhong} - {c.chuyenKhoa}</option>)}
+                        {filteredClinics.map(c => <option key={c._id} value={c._id}>{c.tenPhong} - {getClinicSpec(c)}</option>)}
                       </select>
                     </div>
                     <div className="col-12 col-md-6">
