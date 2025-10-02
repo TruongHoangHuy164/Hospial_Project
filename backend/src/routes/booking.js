@@ -277,30 +277,33 @@ router.post('/appointments/:id/momo', async (req, res, next) => {
     const accessKey = process.env.MOMO_ACCESS_KEY || 'F8BBA842ECF85';
     const secretKey = process.env.MOMO_SECRET_KEY || 'K951B6PE1waDMi640xX08PD3vg6EkVlz';
     const endpoint = process.env.MOMO_ENDPOINT || 'https://test-payment.momo.vn/v2/gateway/api/create';
-  const redirectUrl = process.env.MOMO_RETURN_URL || 'http://localhost:5173/booking';
+    const redirectUrl = process.env.MOMO_RETURN_URL || 'http://localhost:5173/booking';
     const ipnUrl = process.env.MOMO_IPN_URL || 'http://localhost:5000/api/booking/momo/ipn';
     const requestType = 'captureWallet';
+    const orderType = 'momo_wallet'; // per MoMo v2 API spec
 
-  // Amount (VND) - default 150000; allow override via env
-  const amount = String(process.env.MOMO_AMOUNT || 150000);
+    // Amount (VND) - default 150000; allow override via env
+    const amountNum = Number(process.env.MOMO_AMOUNT || 150000);
+    const amountStr = String(amountNum);
     const orderId = `APPT_${id}_${Date.now()}`;
     const requestId = `${Date.now()}`;
     const orderInfo = 'Thanh toan lich kham';
     const extraDataObj = { lichKhamId: id };
     const extraData = Buffer.from(JSON.stringify(extraDataObj)).toString('base64');
 
-    const rawSignature = `accessKey=${accessKey}&amount=${amount}&extraData=${extraData}&ipnUrl=${ipnUrl}&orderId=${orderId}&orderInfo=${orderInfo}&partnerCode=${partnerCode}&redirectUrl=${redirectUrl}&requestId=${requestId}&requestType=${requestType}`;
+    const rawSignature = `accessKey=${accessKey}&amount=${amountStr}&extraData=${extraData}&ipnUrl=${ipnUrl}&orderId=${orderId}&orderInfo=${orderInfo}&partnerCode=${partnerCode}&redirectUrl=${redirectUrl}&requestId=${requestId}&requestType=${requestType}`;
     const signature = crypto.createHmac('sha256', secretKey).update(rawSignature).digest('hex');
 
     const payload = {
       partnerCode,
       accessKey,
       requestId,
-      amount,
+      amount: amountNum,
       orderId,
       orderInfo,
       redirectUrl,
       ipnUrl,
+      orderType,
       extraData,
       requestType,
       signature,
@@ -310,6 +313,14 @@ router.post('/appointments/:id/momo', async (req, res, next) => {
     const resp = await fetch(endpoint, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
     const data = await resp.json().catch(()=>({}));
     if(!resp.ok || !data || data.resultCode !== 0){
+      // Helpful logs for debugging in development
+      console.error('MoMo create payment failed:', {
+        status: resp.status,
+        resultCode: data?.resultCode,
+        message: data?.message,
+        payUrl: data?.payUrl,
+        endpoint
+      });
       return res.status(400).json({ message: data?.message || 'Tạo thanh toán thất bại', detail: data });
     }
     // Return payUrl to redirect user
@@ -414,6 +425,84 @@ router.post('/momo/return', express.json(), async (req, res) => {
     return res.json({ ok: true, soThuTu: stt.soThuTu, sttTrangThai: stt.trangThai });
   }catch(err){
     return res.status(500).json({ ok: false, message: 'Server error' });
+  }
+});
+
+// GET handler for MoMo redirect (use this as MOMO_RETURN_URL)
+// GET /api/booking/momo/return-get
+router.get('/momo/return-get', async (req, res) => {
+  try{
+    const accessKey = process.env.MOMO_ACCESS_KEY || 'F8BBA842ECF85';
+    const secretKey = process.env.MOMO_SECRET_KEY || 'K951B6PE1waDMi640xX08PD3vg6EkVlz';
+    const frontendReturn = process.env.FRONTEND_RETURN_URL || 'http://localhost:5173/booking';
+
+    const {
+      partnerCode, orderId, requestId, amount, orderInfo, orderType,
+      transId, resultCode, message, payType, responseTime, extraData, signature
+    } = req.query || {};
+
+    // Verify signature (same as IPN spec)
+    const rawSignature = `accessKey=${accessKey}&amount=${amount}&extraData=${extraData}&message=${message}&orderId=${orderId}&orderInfo=${orderInfo}&orderType=${orderType}&partnerCode=${partnerCode}&payType=${payType}&requestId=${requestId}&responseTime=${responseTime}&resultCode=${resultCode}&transId=${transId}`;
+    const check = crypto.createHmac('sha256', secretKey).update(rawSignature).digest('hex');
+    if(check !== signature){
+      const url = new URL(frontendReturn);
+      url.searchParams.set('status', 'fail');
+      url.searchParams.set('code', '5');
+      url.searchParams.set('msg', 'Invalid signature');
+      return res.redirect(url.toString());
+    }
+
+    if(Number(resultCode) !== 0){
+      const url = new URL(frontendReturn);
+      url.searchParams.set('status', 'fail');
+      url.searchParams.set('code', String(resultCode));
+      url.searchParams.set('msg', message || 'Payment failed');
+      return res.redirect(url.toString());
+    }
+
+    let lichKhamId = null;
+    try{
+      const j = JSON.parse(Buffer.from(extraData||'', 'base64').toString('utf8')||'{}');
+      lichKhamId = j.lichKhamId;
+    }catch{}
+    if(!lichKhamId){
+      const url = new URL(frontendReturn);
+      url.searchParams.set('status', 'fail');
+      url.searchParams.set('msg', 'Missing appointment id');
+      return res.redirect(url.toString());
+    }
+
+    const appt = await LichKham.findById(lichKhamId);
+    if(!appt){
+      const url = new URL(frontendReturn);
+      url.searchParams.set('status', 'fail');
+      url.searchParams.set('msg', 'Không tìm thấy lịch khám');
+      return res.redirect(url.toString());
+    }
+    if(appt.trangThai !== 'da_thanh_toan'){
+      appt.trangThai = 'da_thanh_toan';
+      await appt.save();
+    }
+    let stt = await SoThuTu.findOne({ lichKhamId: appt._id });
+    if(!stt){
+      const dayStart = startOfDay(appt.ngayKham);
+      const dayEnd = endOfDay(appt.ngayKham);
+      const count = await SoThuTu.countDocuments({ lichKhamId: { $exists: true }, createdAt: { $gte: dayStart, $lt: dayEnd }, benhNhanId: appt.benhNhanId });
+      const so = count + 1;
+      stt = await SoThuTu.create({ lichKhamId: appt._id, benhNhanId: appt.benhNhanId, soThuTu: so, trangThai: 'dang_cho' });
+    }
+
+    const url = new URL(frontendReturn);
+    url.searchParams.set('status', 'success');
+    url.searchParams.set('id', String(lichKhamId));
+    url.searchParams.set('stt', String(stt.soThuTu));
+    return res.redirect(url.toString());
+  }catch(err){
+    const frontendReturn = process.env.FRONTEND_RETURN_URL || 'http://localhost:5173/booking';
+    const url = new URL(frontendReturn);
+    url.searchParams.set('status', 'fail');
+    url.searchParams.set('msg', 'Server error');
+    return res.redirect(url.toString());
   }
 });
 
