@@ -10,6 +10,8 @@ import Notices from './components/Notices'
 import AppointmentCTA from './components/AppointmentCTA'
 import BookingPage from './pages/booking/Index'
 import BookingHistory from './pages/booking/History'
+import HistoryTest from './pages/booking/HistoryTest'
+
 import SpecialtiesPage from './pages/specialties/Index'
 import GuidePage from './pages/guide/Index'
 import Login from './pages/auth/Login'
@@ -77,6 +79,8 @@ export default function App() {
   <Route path="/specialties" element={<SpecialtiesPage />} />
   <Route path="/booking" element={<BookingPage />} />
   <Route path="/booking/history" element={<BookingHistory />} />
+  <Route path="/booking/history-test" element={<HistoryTest />} />
+
   <Route path="/results" element={<MyResults />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
