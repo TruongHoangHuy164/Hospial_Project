@@ -22,7 +22,7 @@ export default function HeroSlider() {
           <p>{s.desc}</p>
           <div className="hero__actions">
             <Link className="btn btn--primary" to="/booking">Đặt lịch ngay</Link>
-            <a className="btn btn--ghost" href="#">Xem dịch vụ</a>
+            <Link className="btn btn--ghost" to="/services">Xem dịch vụ</Link>
           </div>
         </div>
       </div>

@@ -1,8 +1,10 @@
 const express = require('express');
 const User = require('../models/User');
 const BenhNhan = require('../models/BenhNhan');
+const Otp = require('../models/Otp');
 const auth = require('../middlewares/auth');
 const authorize = require('../middlewares/authorize');
+const { sendOtpEmail } = require('../services/emailService');
 
 const router = express.Router();
 
@@ -201,7 +203,138 @@ router.put('/profile', auth, async (req, res, next) => {
   }
 });
 
-// PUT /api/users/change-password - change current user's password
+// POST /api/users/request-change-password-otp - request OTP for password change
+router.post('/request-change-password-otp', auth, async (req, res, next) => {
+  try {
+    const userId = req.user.id;
+    const { currentPassword } = req.body;
+    
+    // Validation
+    if (!currentPassword) {
+      return res.status(400).json({ message: 'Vui lòng nhập mật khẩu hiện tại' });
+    }
+    
+    // Get user and verify current password
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: 'Người dùng không tồn tại' });
+    }
+    
+    // Check current password
+    const isCurrentPasswordValid = await user.comparePassword(currentPassword);
+    if (!isCurrentPasswordValid) {
+      return res.status(400).json({ message: 'Mật khẩu hiện tại không đúng' });
+    }
+    
+    // Generate 6-digit OTP
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    
+    // Set expiration time (3 minutes from now)
+    const expiresAt = new Date(Date.now() + 3 * 60 * 1000); // 3 minutes
+    
+    // Delete any existing unused OTPs for this user and type
+    await Otp.deleteMany({ 
+      userId, 
+      type: 'change_password', 
+      isUsed: false 
+    });
+    
+    // Create new OTP
+    const newOtp = await Otp.create({
+      userId,
+      email: user.email,
+      otp,
+      type: 'change_password',
+      expiresAt
+    });
+    
+    // Send OTP via email
+    const emailResult = await sendOtpEmail(user.email, otp, 'change_password');
+    
+    if (!emailResult.success) {
+      // If email fails, delete the OTP and return error
+      await Otp.findByIdAndDelete(newOtp._id);
+      return res.status(500).json({ 
+        message: 'Không thể gửi email OTP. Vui lòng thử lại sau.',
+        error: emailResult.error 
+      });
+    }
+    
+    return res.json({ 
+      message: 'Mã OTP đã được gửi đến email của bạn. Mã có hiệu lực trong 3 phút.',
+      email: user.email.replace(/(.{2})(.*)(@.*)/, '$1***$3'), // Hide part of email
+      expiresAt: expiresAt.toISOString()
+    });
+  } catch (err) {
+    return next(err);
+  }
+});
+
+// POST /api/users/verify-change-password-otp - verify OTP and change password
+router.post('/verify-change-password-otp', auth, async (req, res, next) => {
+  try {
+    const userId = req.user.id;
+    const { otp, newPassword } = req.body;
+    
+    // Validation
+    if (!otp || !newPassword) {
+      return res.status(400).json({ message: 'Thiếu mã OTP hoặc mật khẩu mới' });
+    }
+    
+    if (newPassword.length < 6) {
+      return res.status(400).json({ message: 'Mật khẩu mới phải có ít nhất 6 ký tự' });
+    }
+    
+    if (!/^\d{6}$/.test(otp)) {
+      return res.status(400).json({ message: 'Mã OTP phải là 6 chữ số' });
+    }
+    
+    // Find valid OTP
+    const otpRecord = await Otp.findOne({
+      userId,
+      otp,
+      type: 'change_password',
+      isUsed: false,
+      expiresAt: { $gt: new Date() } // Not expired
+    });
+    
+    if (!otpRecord) {
+      return res.status(400).json({ 
+        message: 'Mã OTP không hợp lệ, đã được sử dụng hoặc đã hết hạn' 
+      });
+    }
+    
+    // Get user
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: 'Người dùng không tồn tại' });
+    }
+    
+    // Mark OTP as used
+    otpRecord.isUsed = true;
+    await otpRecord.save();
+    
+    // Update password (will be hashed by pre-save middleware)
+    user.password = newPassword;
+    await user.save();
+    
+    // Clear all refresh tokens to force re-login on other devices
+    user.refreshTokenIds = [];
+    await user.save();
+    
+    // Clean up any remaining OTPs for this user
+    await Otp.deleteMany({ userId, type: 'change_password' });
+    
+    return res.json({ 
+      message: 'Đổi mật khẩu thành công! Vui lòng đăng nhập lại trên các thiết bị khác.',
+      timestamp: new Date().toISOString()
+    });
+  } catch (err) {
+    return next(err);
+  }
+});
+
+// PUT /api/users/change-password - change current user's password (OLD METHOD - Keep for backward compatibility)
 router.put('/change-password', auth, async (req, res, next) => {
   try {
     const userId = req.user.id;
