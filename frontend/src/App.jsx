@@ -11,6 +11,7 @@ import AppointmentCTA from './components/AppointmentCTA'
 import BookingPage from './pages/booking/Index'
 import BookingHistory from './pages/booking/History'
 import SpecialtiesPage from './pages/specialties/Index'
+import ServicesPage from './pages/services/Index'
 import GuidePage from './pages/guide/Index'
 import Login from './pages/auth/Login'
 import Register from './pages/auth/Register'
@@ -23,6 +24,7 @@ import Overview from './pages/admin/Overview'
 import Users from './pages/admin/Users'
 import Doctors from './pages/admin/doctor/Index'
 import Clinics from './pages/admin/clinic/Index'
+import AdminServicesPage from './pages/admin/service/Index'
 import StaffIndex from './pages/admin/staff/Index'
 import StaffEdit from './pages/admin/staff/Edit'
 import SiteLayout from './layouts/SiteLayout'
@@ -70,6 +72,7 @@ export default function App() {
         } />
   <Route path="/guide" element={<GuidePage />} />
   <Route path="/specialties" element={<SpecialtiesPage />} />
+  <Route path="/services" element={<ServicesPage />} />
   <Route path="/booking" element={<BookingPage />} />
   <Route path="/booking/history" element={<BookingHistory />} />
   <Route path="/results" element={<MyResults />} />
@@ -87,6 +90,7 @@ export default function App() {
         <Route path="users" element={<Users />} />
         <Route path="doctors" element={<Doctors />} />
         <Route path="clinics" element={<Clinics />} />
+        <Route path="services" element={<AdminServicesPage />} />
         <Route path="staff" element={<StaffIndex />} />
         <Route path="staff/:id" element={<StaffEdit />} />
       </Route>
