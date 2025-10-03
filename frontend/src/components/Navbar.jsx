@@ -1,6 +1,7 @@
 import React from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import UserMenu from './UserMenuSimple'
 
 export default function Navbar() {
   const { user, isAuthenticated, signOut } = useAuth();
@@ -23,14 +24,7 @@ export default function Navbar() {
             <Link to="/register" className="nav__item"><i className="bi bi-person-plus"></i> Đăng ký</Link>
           </>
         ) : (
-          <>
-            {/* <Link to="/user/my-appointments" className="nav__item"><i className="bi bi-calendar-check"></i> Lịch khám của tôi</Link> */}
-            <Link to="/user/profiles" className="nav__item"><i className="bi bi-people"></i> Hồ sơ người thân</Link>
-            <span className="nav__item">Xin chào, <strong>{user?.name || user?.email}</strong></span>
-            <button className="nav__item btn btn-link p-0" onClick={signOut}>
-              <i className="bi bi-box-arrow-right"></i> Đăng xuất
-            </button>
-          </>
+          <UserMenu />
         )}
       </div>
     </nav>
