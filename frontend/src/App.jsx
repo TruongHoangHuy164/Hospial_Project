@@ -48,10 +48,14 @@ import ReceptionPrint from './pages/reception/Print'
 import MyResults from './pages/results/Index'
 import PatientProfiles from './pages/user/PatientProfiles'
 import MyAppointments from './pages/user/MyAppointments'
+import UserProfile from './pages/user/ProfileSimple'
+import ServerStatus from './components/ServerStatus'
 
 export default function App() {
   return (
-    <Routes>
+    <>
+      <ServerStatus />
+      <Routes>
       <Route element={<SiteLayout />}>
         <Route path="/" element={
           <>
@@ -75,6 +79,7 @@ export default function App() {
         <Route path="/reset" element={<ResetPassword />} />
         <Route path="/user/profiles" element={<PatientProfiles />} />
         <Route path="/user/my-appointments" element={<MyAppointments />} />
+        <Route path="/user/profile" element={<UserProfile />} />
       </Route>
 
       <Route path="/admin" element={<RequireAdmin><AdminLayout /></RequireAdmin>}>
@@ -108,5 +113,6 @@ export default function App() {
         <Route path="results" element={<LabResults />} />
       </Route>
     </Routes>
+    </>
   )
 }

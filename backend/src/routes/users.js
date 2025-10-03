@@ -78,6 +78,129 @@ router.get('/my-patient-profile', auth, async (req, res, next) => {
   }
 });
 
+// GET /api/users/profile - get current user's complete profile info
+router.get('/profile', auth, async (req, res, next) => {
+  try {
+    const userId = req.user.id;
+    
+    // Get User basic info
+    const user = await User.findById(userId).select('-password -resetPasswordToken -resetPasswordExpires -refreshTokenIds');
+    if (!user) {
+      return res.status(404).json({ message: 'Người dùng không tồn tại' });
+    }
+    
+    // Get BenhNhan detailed info
+    let benhNhan = await BenhNhan.findOne({ userId }).sort({ createdAt: -1 });
+    
+    if (!benhNhan) {
+      // Create basic BenhNhan profile if doesn't exist
+      benhNhan = await BenhNhan.create({
+        userId: userId,
+        hoTen: user.name || 'Chưa cập nhật',
+        gioiTinh: 'khac',
+        soDienThoai: '',
+      });
+    }
+    
+    // Combine both profiles
+    const profile = {
+      // User info
+      id: user._id,
+      email: user.email,
+      role: user.role,
+      createdAt: user.createdAt,
+      // BenhNhan info
+      hoTen: benhNhan.hoTen,
+      ngaySinh: benhNhan.ngaySinh,
+      gioiTinh: benhNhan.gioiTinh,
+      diaChi: benhNhan.diaChi,
+      soDienThoai: benhNhan.soDienThoai,
+      maBHYT: benhNhan.maBHYT,
+      benhNhanId: benhNhan._id
+    };
+    
+    return res.json(profile);
+  } catch (err) {
+    return next(err);
+  }
+});
+
+// PUT /api/users/profile - update current user's profile info
+router.put('/profile', auth, async (req, res, next) => {
+  try {
+    const userId = req.user.id;
+    const { hoTen, ngaySinh, gioiTinh, diaChi, soDienThoai, maBHYT } = req.body;
+    
+    // Validation
+    if (!hoTen || hoTen.trim().length === 0) {
+      return res.status(400).json({ message: 'Họ tên không được để trống' });
+    }
+    
+    if (gioiTinh && !['nam', 'nu', 'khac'].includes(gioiTinh)) {
+      return res.status(400).json({ message: 'Giới tính không hợp lệ' });
+    }
+    
+    if (ngaySinh) {
+      const birthDate = new Date(ngaySinh);
+      if (isNaN(birthDate.getTime())) {
+        return res.status(400).json({ message: 'Ngày sinh không hợp lệ' });
+      }
+      if (birthDate > new Date()) {
+        return res.status(400).json({ message: 'Ngày sinh không thể là tương lai' });
+      }
+    }
+    
+    if (soDienThoai && !/^[0-9+\-\s()]{10,15}$/.test(soDienThoai.replace(/\s/g, ''))) {
+      return res.status(400).json({ message: 'Số điện thoại không hợp lệ' });
+    }
+    
+    // Update User name
+    await User.findByIdAndUpdate(userId, { 
+      name: hoTen.trim() 
+    });
+    
+    // Update or create BenhNhan profile
+    const updateData = {
+      hoTen: hoTen.trim(),
+      ...(ngaySinh && { ngaySinh: new Date(ngaySinh) }),
+      ...(gioiTinh && { gioiTinh }),
+      ...(diaChi !== undefined && { diaChi: diaChi.trim() }),
+      ...(soDienThoai !== undefined && { soDienThoai: soDienThoai.trim() }),
+      ...(maBHYT !== undefined && { maBHYT: maBHYT.trim() })
+    };
+    
+    const benhNhan = await BenhNhan.findOneAndUpdate(
+      { userId },
+      updateData,
+      { new: true, upsert: true }
+    );
+    
+    // Return updated profile
+    const user = await User.findById(userId).select('-password -resetPasswordToken -resetPasswordExpires -refreshTokenIds');
+    
+    const profile = {
+      id: user._id,
+      email: user.email,
+      role: user.role,
+      createdAt: user.createdAt,
+      hoTen: benhNhan.hoTen,
+      ngaySinh: benhNhan.ngaySinh,
+      gioiTinh: benhNhan.gioiTinh,
+      diaChi: benhNhan.diaChi,
+      soDienThoai: benhNhan.soDienThoai,
+      maBHYT: benhNhan.maBHYT,
+      benhNhanId: benhNhan._id
+    };
+    
+    return res.json({ 
+      message: 'Cập nhật thông tin thành công',
+      profile 
+    });
+  } catch (err) {
+    return next(err);
+  }
+});
+
 module.exports = router;
 
 // PATCH /api/users/:id/role
