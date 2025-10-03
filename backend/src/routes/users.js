@@ -201,6 +201,49 @@ router.put('/profile', auth, async (req, res, next) => {
   }
 });
 
+// PUT /api/users/change-password - change current user's password
+router.put('/change-password', auth, async (req, res, next) => {
+  try {
+    const userId = req.user.id;
+    const { currentPassword, newPassword } = req.body;
+    
+    // Validation
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({ message: 'Thiếu mật khẩu hiện tại hoặc mật khẩu mới' });
+    }
+    
+    if (newPassword.length < 6) {
+      return res.status(400).json({ message: 'Mật khẩu mới phải có ít nhất 6 ký tự' });
+    }
+    
+    // Get user and verify current password
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: 'Người dùng không tồn tại' });
+    }
+    
+    // Check current password
+    const isCurrentPasswordValid = await user.comparePassword(currentPassword);
+    if (!isCurrentPasswordValid) {
+      return res.status(400).json({ message: 'Mật khẩu hiện tại không đúng' });
+    }
+    
+    // Update password (will be hashed by pre-save middleware)
+    user.password = newPassword;
+    await user.save();
+    
+    // Clear all refresh tokens to force re-login on other devices
+    user.refreshTokenIds = [];
+    await user.save();
+    
+    return res.json({ 
+      message: 'Đổi mật khẩu thành công. Vui lòng đăng nhập lại trên các thiết bị khác.' 
+    });
+  } catch (err) {
+    return next(err);
+  }
+});
+
 module.exports = router;
 
 // PATCH /api/users/:id/role

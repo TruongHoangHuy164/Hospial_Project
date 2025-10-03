@@ -30,11 +30,12 @@ export default function BookingHistory(){
       {error && <div className="alert alert-danger">{error}</div>}
       <div className="table-responsive">
         <table className="table table-striped">
-          <thead><tr><th>Ngày</th><th>Khung giờ</th><th>Bác sĩ</th><th>Chuyên khoa</th><th>Trạng thái</th><th>STT</th></tr></thead>
+          <thead><tr><th>Ngày</th><th>Tên bệnh nhân</th><th>Khung giờ</th><th>Bác sĩ</th><th>Chuyên khoa</th><th>Trạng thái</th><th>STT</th></tr></thead>
           <tbody>
             {items.map(it=> (
               <tr key={it._id}>
                 <td>{it.ngayKham? new Date(it.ngayKham).toLocaleDateString() : '-'}</td>
+                <td>{it.benhNhan?.hoTen || '-'}</td>
                 <td>{it.khungGio || '-'}</td>
                 <td>{it.bacSi?.hoTen || '-'}</td>
                 <td>{it.chuyenKhoa?.ten || '-'}</td>
@@ -43,7 +44,7 @@ export default function BookingHistory(){
               </tr>
             ))}
             {items.length===0 && (
-              <tr><td colSpan={6} className="text-center">Không có dữ liệu</td></tr>
+              <tr><td colSpan={7} className="text-center">Không có dữ liệu</td></tr>
             )}
           </tbody>
         </table>

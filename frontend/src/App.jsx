@@ -48,7 +48,12 @@ import ReceptionPrint from './pages/reception/Print'
 import MyResults from './pages/results/Index'
 import PatientProfiles from './pages/user/PatientProfiles'
 import MyAppointments from './pages/user/MyAppointments'
-import UserProfile from './pages/user/ProfileSimple'
+import UserProfileView from './pages/user/UserProfile'
+import EditProfile from './pages/user/EditProfile'
+import ChangePassword from './pages/user/ChangePassword'
+import ProfileSimple from './pages/user/ProfileSimple'
+import ProfileDebug from './pages/user/ProfileDebug'
+import PasswordDebug from './pages/user/PasswordDebug'
 import ServerStatus from './components/ServerStatus'
 
 export default function App() {
@@ -79,7 +84,12 @@ export default function App() {
         <Route path="/reset" element={<ResetPassword />} />
         <Route path="/user/profiles" element={<PatientProfiles />} />
         <Route path="/user/my-appointments" element={<MyAppointments />} />
-        <Route path="/user/profile" element={<UserProfile />} />
+        <Route path="/user/profile" element={<UserProfileView />} />
+        <Route path="/user/edit-profile" element={<EditProfile />} />
+        <Route path="/user/change-password" element={<ChangePassword />} />
+        <Route path="/user/profile-simple" element={<ProfileSimple />} />
+        <Route path="/user/profile-debug" element={<ProfileDebug />} />
+        <Route path="/user/password-debug" element={<PasswordDebug />} />
       </Route>
 
       <Route path="/admin" element={<RequireAdmin><AdminLayout /></RequireAdmin>}>

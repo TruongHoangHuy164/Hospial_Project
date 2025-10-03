@@ -14,8 +14,7 @@ export default function BookingPage(){
   
   // Step 1 state
   const [profiles, setProfiles] = useState([]);
-  const [selfProfile, setSelfProfile] = useState(null);
-  const [selectedProfileId, setSelectedProfileId] = useState(''); // 'self' or profile._id
+  const [selectedProfileId, setSelectedProfileId] = useState(''); // profile._id
   const [loadingProfiles, setLoadingProfiles] = useState(true);
 
   // Step 2 state
@@ -50,24 +49,14 @@ export default function BookingPage(){
     if (!isAuthenticated) return;
     setLoadingProfiles(true);
     try {
-      const [profilesRes, selfRes] = await Promise.all([
-        getPatientProfiles(),
-        fetch(`${API_URL}/api/users/my-patient-profile`, { headers })
-      ]);
-      
+      const profilesRes = await getPatientProfiles();
       setProfiles(profilesRes.data);
 
-      if (selfRes.ok) {
-        const selfData = await selfRes.json();
-        console.log('Self patient profile:', selfData);
-        setSelfProfile(selfData);
-        setSelectedProfileId('self'); // Default to self
+      // Default to first relative profile if available
+      if(profilesRes.data.length > 0) {
+        setSelectedProfileId(profilesRes.data[0]._id);
       } else {
-        console.log('No self patient profile found:', selfRes.status);
-        // If user has no self-profile, default to first relative if available
-        if(profilesRes.data.length > 0) {
-          setSelectedProfileId(profilesRes.data[0]._id);
-        }
+        setSelectedProfileId(null); // No profiles available
       }
 
     } catch (error) {
@@ -237,18 +226,9 @@ export default function BookingPage(){
 
       console.log('Frontend: Creating appointment with selectedProfileId:', selectedProfileId);
 
-      // If a relative's profile is selected, use hoSoBenhNhanId
-      if (selectedProfileId && selectedProfileId !== 'self') {
-        payload.hoSoBenhNhanId = selectedProfileId;
-        console.log('Frontend: Booking for relative profile:', selectedProfileId);
-      } else if (selectedProfileId === 'self') {
-        // Booking for self - use benhNhanId
-        if (!selfProfile?._id) {
-          return toast.error('Không tìm thấy hồ sơ bệnh nhân của bạn.');
-        }
-        payload.benhNhanId = selfProfile._id;
-        console.log('Frontend: Booking for self with benhNhanId:', selfProfile._id);
-      }
+      // Booking for relative profile only (self-booking removed)
+      payload.hoSoBenhNhanId = selectedProfileId;
+      console.log('Frontend: Booking for relative profile:', selectedProfileId);
 
       console.log('Frontend: Final payload:', payload);
 
@@ -298,7 +278,9 @@ export default function BookingPage(){
   }
 
   const handleNextStep1 = () => {
-    // No profile selected is OK, it will default to the user themselves.
+    if (!selectedProfileId) {
+      return toast.error('Vui lòng chọn hồ sơ bệnh nhân để đặt lịch.');
+    }
     setStep(2);
   }
 
@@ -323,19 +305,6 @@ export default function BookingPage(){
               <p>Đang tải hồ sơ...</p>
             ) : (
               <div className="list-group">
-                {selfProfile && (
-                  <label className={`list-group-item list-group-item-action ${selectedProfileId === 'self' ? 'active' : ''}`}>
-                    <input 
-                      type="radio" 
-                      name="profileSelection" 
-                      className="form-check-input me-2" 
-                      value="self"
-                      checked={selectedProfileId === 'self'}
-                      onChange={(e) => setSelectedProfileId(e.target.value)}
-                    />
-                    <strong>Bản thân:</strong> {selfProfile.hoTen} ({new Date(selfProfile.ngaySinh).toLocaleDateString('vi-VN')})
-                  </label>
-                )}
                 {profiles.map(profile => (
                   <label key={profile._id} className={`list-group-item list-group-item-action ${selectedProfileId === profile._id ? 'active' : ''}`}>
                      <input 
@@ -349,17 +318,17 @@ export default function BookingPage(){
                     <strong>{profile.quanHe}:</strong> {profile.hoTen} ({new Date(profile.ngaySinh).toLocaleDateString('vi-VN')})
                   </label>
                 ))}
-                {!selfProfile && profiles.length === 0 && (
+                {profiles.length === 0 && (
                   <p className="text-center text-muted p-3">
-                    Bạn chưa có hồ sơ nào. <br/>
-                    Vui lòng vào <Link to="/user/profiles">Quản lý hồ sơ</Link> để thêm hồ sơ người thân, hoặc cập nhật thông tin cá nhân để tạo hồ sơ cho chính bạn.
+                    Bạn chưa có hồ sơ người thân nào. <br/>
+                    Vui lòng vào <Link to="/user/profiles">Quản lý hồ sơ</Link> để thêm hồ sơ người thân trước khi đặt lịch khám.
                   </p>
                 )}
               </div>
             )}
           </div>
           <div className="card-footer d-flex justify-content-end">
-            <button className="btn btn-primary" onClick={handleNextStep1} disabled={loadingProfiles}>
+            <button className="btn btn-primary" onClick={handleNextStep1} disabled={loadingProfiles || !selectedProfileId}>
               Tiếp tục
             </button>
           </div>
