@@ -23,6 +23,10 @@ export default function Login() {
         navigate('/reception/dashboard');
       } else if (u?.role === 'lab') {
         navigate('/lab/dashboard');
+      } else if (u?.role === 'nurse') {
+        navigate('/nurse/dashboard');
+      } else if (u?.role === 'cashier') {
+        navigate('/cashier/dashboard');
       } else {
         navigate('/');
       }

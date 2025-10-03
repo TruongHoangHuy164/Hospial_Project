@@ -59,6 +59,16 @@ import ProfileSimple from './pages/user/ProfileSimple'
 import ProfileDebug from './pages/user/ProfileDebug'
 import PasswordDebug from './pages/user/PasswordDebug'
 import ServerStatus from './components/ServerStatus'
+import RequireNurse from './pages/nurse/RequireNurse'
+import NurseLayout from './pages/nurse/Layout'
+import NurseDashboard from './pages/nurse/Dashboard'
+import PatientsToday from './pages/nurse/PatientsToday'
+import RequireCashier from './pages/cashier/RequireCashier'
+import CashierLayout from './pages/cashier/Layout'
+import CashierDashboard from './pages/cashier/Dashboard'
+import CashierPayments from './pages/cashier/Payments'
+import CashierInvoices from './pages/cashier/Invoices'
+import CashierReports from './pages/cashier/Reports'
 
 export default function App() {
   return (
@@ -129,6 +139,18 @@ export default function App() {
         <Route path="dashboard" element={<LabDashboard />} />
         <Route path="orders" element={<LabOrders />} />
         <Route path="results" element={<LabResults />} />
+      </Route>
+
+      <Route path="/nurse" element={<RequireNurse><NurseLayout /></RequireNurse>}>
+        <Route path="dashboard" element={<NurseDashboard />} />
+        <Route path="patients-today" element={<PatientsToday />} />
+      </Route>
+
+      <Route path="/cashier" element={<RequireCashier><CashierLayout /></RequireCashier>}>
+        <Route path="dashboard" element={<CashierDashboard />} />
+        <Route path="payments" element={<CashierPayments />} />
+        <Route path="invoices" element={<CashierInvoices />} />
+        <Route path="reports" element={<CashierReports />} />
       </Route>
     </Routes>
     </>

@@ -45,7 +45,7 @@ app.use('/api/staff', auth, authorize('admin'), staffRouter);
 app.use('/api/doctor', auth, authorize('doctor'), doctorSelfRouter);
 app.use('/api/lab', auth, authorize('lab','admin'), labRouter);
 app.use('/api/clinics', auth, authorize('admin'), clinicsRouter);
-app.use('/api/uploads', auth, authorize('admin','doctor'), uploadsRouter);
+app.use('/api/uploads', auth, authorize('admin','doctor','nurse'), uploadsRouter);
 app.use('/api/specialties', auth, authorize('admin'), specialtiesRouter);
 app.use('/api/services', auth, authorize('admin'), servicesRouter);
 app.use('/api/booking', bookingRouter);

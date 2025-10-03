@@ -38,7 +38,7 @@ export default function StaffIndex(){
   return (
     <div>
       <div className="d-flex justify-content-between align-items-center mb-3">
-        <h3>Quản lý nhân viên (Lễ tân / CLS)</h3>
+  <h3>Quản lý nhân viên (Lễ tân / CLS / Thu ngân / Điều dưỡng)</h3>
         <Link to="/admin/staff/new" className="btn btn-primary">Thêm nhân viên</Link>
       </div>
       {error && <div className="alert alert-danger">{error}</div>}
@@ -49,6 +49,8 @@ export default function StaffIndex(){
             <option value="">Tất cả vai trò</option>
             <option value="reception">Lễ tân</option>
             <option value="lab">Cận lâm sàng</option>
+            <option value="cashier">Thu ngân</option>
+            <option value="nurse">Điều dưỡng</option>
           </select>
         </div>
         <div className="col-md-2"><button className="btn btn-outline-primary w-100" onClick={load}>Lọc</button></div>

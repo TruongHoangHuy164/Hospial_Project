@@ -19,7 +19,7 @@ export default function StaffEdit(){
       const res = await fetch(`${API_URL}/api/staff/${id}`, { headers: { Authorization: `Bearer ${localStorage.getItem('accessToken')||''}` } });
       const json = await res.json();
       if(!res.ok) throw json;
-      setForm({ hoTen: json.hoTen||'', vaiTro: json.vaiTro||'reception', email: json.email||'', soDienThoai: json.soDienThoai||'', diaChi: json.diaChi||'' });
+  setForm({ hoTen: json.hoTen||'', vaiTro: json.vaiTro||'reception', email: json.email||'', soDienThoai: json.soDienThoai||'', diaChi: json.diaChi||'' });
     }catch(e){ setError(e?.message||'Lỗi tải'); }
   }
 
@@ -49,6 +49,8 @@ export default function StaffEdit(){
           <select name="vaiTro" className="form-select" value={form.vaiTro} onChange={onChange}>
             <option value="reception">Lễ tân</option>
             <option value="lab">Cận lâm sàng</option>
+            <option value="cashier">Thu ngân</option>
+            <option value="nurse">Điều dưỡng</option>
           </select>
         </div>
         <div className="col-md-6"><label className="form-label">Email</label><input type="email" name="email" className="form-control" value={form.email} onChange={onChange} /></div>
