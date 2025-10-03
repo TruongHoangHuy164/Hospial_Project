@@ -10,6 +10,8 @@ import Notices from './components/Notices'
 import AppointmentCTA from './components/AppointmentCTA'
 import BookingPage from './pages/booking/Index'
 import BookingHistory from './pages/booking/History'
+import HistoryTest from './pages/booking/HistoryTest'
+
 import SpecialtiesPage from './pages/specialties/Index'
 import ServicesPage from './pages/services/Index'
 import GuidePage from './pages/guide/Index'
@@ -50,7 +52,12 @@ import ReceptionPrint from './pages/reception/Print'
 import MyResults from './pages/results/Index'
 import PatientProfiles from './pages/user/PatientProfiles'
 import MyAppointments from './pages/user/MyAppointments'
-import UserProfile from './pages/user/ProfileSimple'
+import UserProfileView from './pages/user/UserProfile'
+import EditProfile from './pages/user/EditProfile'
+import ChangePassword from './pages/user/ChangePassword'
+import ProfileSimple from './pages/user/ProfileSimple'
+import ProfileDebug from './pages/user/ProfileDebug'
+import PasswordDebug from './pages/user/PasswordDebug'
 import ServerStatus from './components/ServerStatus'
 
 export default function App() {
@@ -75,6 +82,8 @@ export default function App() {
   <Route path="/services" element={<ServicesPage />} />
   <Route path="/booking" element={<BookingPage />} />
   <Route path="/booking/history" element={<BookingHistory />} />
+  <Route path="/booking/history-test" element={<HistoryTest />} />
+
   <Route path="/results" element={<MyResults />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
@@ -82,7 +91,12 @@ export default function App() {
         <Route path="/reset" element={<ResetPassword />} />
         <Route path="/user/profiles" element={<PatientProfiles />} />
         <Route path="/user/my-appointments" element={<MyAppointments />} />
-        <Route path="/user/profile" element={<UserProfile />} />
+        <Route path="/user/profile" element={<UserProfileView />} />
+        <Route path="/user/edit-profile" element={<EditProfile />} />
+        <Route path="/user/change-password" element={<ChangePassword />} />
+        <Route path="/user/profile-simple" element={<ProfileSimple />} />
+        <Route path="/user/profile-debug" element={<ProfileDebug />} />
+        <Route path="/user/password-debug" element={<PasswordDebug />} />
       </Route>
 
       <Route path="/admin" element={<RequireAdmin><AdminLayout /></RequireAdmin>}>

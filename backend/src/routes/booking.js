@@ -87,6 +87,10 @@ router.get('/my-appointments', auth, async (req, res, next) => {
   }catch(err){ return next(err); }
 });
 
+
+
+
+
 // GET /api/booking/my-results?page=1&limit=10
 router.get('/my-results', auth, async (req, res, next) => {
   try{
@@ -312,20 +316,44 @@ router.get('/appointments', async (req, res, next) => {
   }catch(err){ return next(err); }
 });
 
-// PUT /api/booking/appointments/:id - reschedule
-router.put('/appointments/:id', async (req, res, next) => {
+
+
+// DELETE /api/booking/appointments/:id - cancel appointment
+router.delete('/appointments/:id', auth, async (req, res, next) => {
   try{
-    const { date, khungGio, bacSiId } = req.body || {};
-    const update = {};
-    if(date){ const d = new Date(date); if(isNaN(d)) return res.status(400).json({ message: 'date không hợp lệ' }); update.ngayKham = startOfDay(d); }
-    if(khungGio) update.khungGio = khungGio;
-    if(bacSiId) update.bacSiId = bacSiId;
-    if(Object.keys(update).length===0) return res.status(400).json({ message: 'Không có gì để cập nhật' });
-    const doc = await LichKham.findByIdAndUpdate(req.params.id, update, { new: true });
-    if(!doc) return res.status(404).json({ message: 'Không tìm thấy lịch' });
-    res.json(doc);
+    const userId = req.user.id;
+    
+    // Find appointment and verify ownership
+    const appointment = await LichKham.findById(req.params.id);
+    if(!appointment) return res.status(404).json({ message: 'Không tìm thấy lịch khám' });
+    
+    if(String(appointment.nguoiDatId) !== String(userId)) {
+      return res.status(403).json({ message: 'Bạn không có quyền hủy lịch khám này' });
+    }
+    
+    // Check if appointment can be cancelled
+    if(appointment.trangThai === 'da_kham') {
+      return res.status(400).json({ message: 'Không thể hủy lịch khám đã hoàn thành' });
+    }
+    
+    // Check time constraint (e.g., can't cancel within 2 hours of appointment)
+    const appointmentTime = new Date(appointment.ngayKham);
+    const now = new Date();
+    const timeDiff = appointmentTime.getTime() - now.getTime();
+    const hoursDiff = timeDiff / (1000 * 3600);
+    
+    if(hoursDiff < 2 && hoursDiff > 0) {
+      return res.status(400).json({ message: 'Không thể hủy lịch khám trong vòng 2 tiếng trước giờ khám' });
+    }
+    
+    // Delete related queue number if exists
+    await SoThuTu.deleteMany({ lichKhamId: req.params.id });
+    
+    // Delete appointment
+    await LichKham.findByIdAndDelete(req.params.id);
+    
+    res.json({ message: 'Hủy lịch khám thành công' });
   }catch(err){
-    if(err && err.code===11000){ return res.status(409).json({ message: 'Khung giờ đã được đặt' }); }
     return next(err);
   }
 });
