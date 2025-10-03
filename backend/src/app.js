@@ -19,6 +19,7 @@ const staffRouter = require('./routes/staff');
 const patientProfilesRouter = require('./routes/patientProfiles');
 const servicesRouter = require('./routes/services');
 const publicRouter = require('./routes/public');
+const aiRouter = require('./routes/ai');
 
 const app = express();
 
@@ -50,6 +51,7 @@ app.use('/api/services', auth, authorize('admin'), servicesRouter);
 app.use('/api/booking', bookingRouter);
 app.use('/api/patient-profiles', patientProfilesRouter);
 app.use('/api/public', publicRouter);
+app.use('/api/ai', aiRouter);
 
 // Protected sample route
 app.get('/api/profile', auth, (req, res) => {
