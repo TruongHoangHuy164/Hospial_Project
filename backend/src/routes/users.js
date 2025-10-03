@@ -108,3 +108,34 @@ router.patch('/:id/role', auth, authorize('admin'), async (req, res, next) => {
     return next(err);
   }
 });
+
+// PATCH /api/users/:id/lock { isLocked: true|false }
+router.patch('/:id/lock', auth, authorize('admin'), async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { isLocked } = req.body || {};
+    if (typeof isLocked !== 'boolean') {
+      return res.status(400).json({ message: 'Thiếu hoặc sai định dạng isLocked' });
+    }
+
+    // Safety: prevent current admin from locking themselves
+    if (req.user && req.user.id === id) {
+      return res.status(400).json({ message: 'Không thể tự khóa tài khoản của chính mình' });
+    }
+
+    const update = { isLocked };
+    // If locking, also revoke all refresh tokens to force logout
+    if (isLocked) update.refreshTokenIds = [];
+
+    const user = await User.findByIdAndUpdate(
+      id,
+      { $set: update },
+      { new: true, projection: '-password -resetPasswordToken -resetPasswordExpires -refreshTokenIds' }
+    );
+    if (!user) return res.status(404).json({ message: 'Không tìm thấy người dùng' });
+
+    return res.json({ message: isLocked ? 'Đã khóa tài khoản' : 'Đã mở khóa tài khoản', user });
+  } catch (err) {
+    return next(err);
+  }
+});

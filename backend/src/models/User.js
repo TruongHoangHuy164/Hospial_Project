@@ -9,6 +9,8 @@ const UserSchema = new mongoose.Schema(
   role: { type: String, enum: ['user', 'doctor', 'admin', 'reception', 'lab'], default: 'user', index: true },
   permissions: { type: [String], default: [] },
   lastActive: { type: Date, index: true },
+    // Account status
+    isLocked: { type: Boolean, default: false, index: true },
     // Refresh token management (store identifiers, not raw tokens)
     refreshTokenIds: { type: [String], default: [] },
     // Password reset

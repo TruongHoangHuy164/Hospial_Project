@@ -76,6 +76,10 @@ router.post('/login', async (req, res, next) => {
       return res.status(401).json({ message: 'Sai email hoặc password' });
     }
 
+    if (user.isLocked) {
+      return res.status(403).json({ message: 'Tài khoản đã bị khóa. Vui lòng liên hệ quản trị viên.' });
+    }
+
     const ok = await user.comparePassword(password);
     if (!ok) {
       return res.status(401).json({ message: 'Sai email hoặc password' });
@@ -87,7 +91,7 @@ router.post('/login', async (req, res, next) => {
     const accessToken = signAccessToken(user);
     const refreshToken = signRefreshToken(user, tokenId);
     return res.status(200).json({
-      user: { id: user._id, name: user.name, email: user.email, role: user.role },
+      user: { id: user._id, name: user.name, email: user.email, role: user.role, isLocked: !!user.isLocked },
       accessToken,
       refreshToken,
     });
@@ -108,8 +112,9 @@ router.post('/refresh', async (req, res, next) => {
     } catch {
       return res.status(401).json({ message: 'Refresh token không hợp lệ' });
     }
-    const user = await User.findById(payload.sub);
+  const user = await User.findById(payload.sub);
     if (!user) return res.status(401).json({ message: 'User không tồn tại' });
+  if (user.isLocked) return res.status(403).json({ message: 'Tài khoản đã bị khóa' });
     const valid = user.refreshTokenIds.includes(payload.tid);
     if (!valid) return res.status(401).json({ message: 'Refresh token đã thu hồi' });
 

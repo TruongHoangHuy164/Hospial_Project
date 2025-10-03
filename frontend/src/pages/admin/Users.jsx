@@ -11,6 +11,16 @@ export default function Users() {
   const [roleFilter, setRoleFilter] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const me = useMemo(() => {
+    try {
+      const t = localStorage.getItem('accessToken');
+      if (!t) return null;
+      const [, payload] = t.split('.');
+      if (!payload) return null;
+      const json = JSON.parse(atob(payload));
+      return json; // { id, email, name, role, iat, exp }
+    } catch { return null; }
+  }, []);
 
   const headers = useMemo(() => ({
     'Content-Type': 'application/json',
@@ -55,6 +65,23 @@ export default function Users() {
     }
   }
 
+  async function toggleLock(u) {
+    const targetState = !u.isLocked;
+    if (!confirm(`${targetState ? 'Khóa' : 'Mở khóa'} tài khoản của ${u.name || u.email}?`)) return;
+    try {
+      const res = await fetch(`${API_URL}/api/users/${u._id}/lock`, {
+        method: 'PATCH',
+        headers,
+        body: JSON.stringify({ isLocked: targetState }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw json;
+      await load();
+    } catch (e) {
+      alert(e?.message || 'Thao tác thất bại');
+    }
+  }
+
   return (
     <div>
       <h3 className="mb-3">Quản lý người dùng</h3>
@@ -91,6 +118,7 @@ export default function Users() {
               <th>Tên</th>
               <th>Email</th>
               <th>Vai trò</th>
+              <th>Trạng thái</th>
               <th>Ngày tạo</th>
               <th></th>
             </tr>
@@ -109,12 +137,30 @@ export default function Users() {
                     <option value="admin">Admin</option>
                   </select>
                 </td>
+                <td>
+                  {u.isLocked ? (
+                    <span className="badge bg-danger">Đã khóa</span>
+                  ) : (
+                    <span className="badge bg-success">Hoạt động</span>
+                  )}
+                </td>
                 <td>{u.createdAt ? new Date(u.createdAt).toLocaleString() : '-'}</td>
-                <td></td>
+                <td className="text-end">
+                  <div className="btn-group btn-group-sm">
+                    <button
+                      className={`btn ${u.isLocked ? 'btn-success' : 'btn-outline-danger'}`}
+                      onClick={()=>toggleLock(u)}
+                      disabled={me && me.id === u._id}
+                      title={me && me.id === u._id ? 'Không thể khóa chính mình' : ''}
+                    >
+                      {u.isLocked ? 'Mở khóa' : 'Khóa'}
+                    </button>
+                  </div>
+                </td>
               </tr>
             ))}
             {items.length === 0 && (
-              <tr><td colSpan={5} className="text-center">Không có dữ liệu</td></tr>
+              <tr><td colSpan={6} className="text-center">Không có dữ liệu</td></tr>
             )}
           </tbody>
         </table>
