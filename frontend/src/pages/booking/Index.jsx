@@ -7,7 +7,7 @@ import { toast } from 'react-toastify';
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
 export default function BookingPage(){
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, loading } = useAuth();
   const navigate = useNavigate();
 
   const [step, setStep] = useState(1);
@@ -34,13 +34,16 @@ export default function BookingPage(){
 
   const headers = useMemo(()=>({ 'Content-Type':'application/json', Authorization: `Bearer ${localStorage.getItem('accessToken')||''}` }), []);
 
-  // Redirect if not logged in
+  // Redirect if not logged in (but wait for auth loading and skip when returning from payment)
   useEffect(() => {
-    if (!isAuthenticated) {
+    if (loading) return; // wait until auth state is known
+    const params = new URLSearchParams(window.location.search);
+    const hasPaymentReturn = params.get('status') !== null || params.get('resultCode') !== null;
+    if (!isAuthenticated && !hasPaymentReturn) {
       toast.info('Vui lòng đăng nhập để đặt lịch khám.');
       navigate('/login?redirect=/booking');
     }
-  }, [isAuthenticated, navigate]);
+  }, [isAuthenticated, navigate, loading]);
 
   // Fetch user's own profile and relative profiles
   const loadProfiles = useCallback(async () => {
@@ -164,6 +167,43 @@ export default function BookingPage(){
       }
     }catch{}
   },[]);
+
+  // Handle backend redirect success (/api/booking/momo/return-get -> frontend with ?status=success&id=&stt=)
+  useEffect(() => {
+    try{
+      const params = new URLSearchParams(window.location.search);
+      const status = params.get('status');
+      const lichKhamId = params.get('id') || sessionStorage.getItem('momo_appt_id');
+      if(!status) return;
+      if(status === 'success' && lichKhamId){
+        setAppointment({ _id: lichKhamId });
+        const stt = params.get('stt');
+        if(stt){
+          setTicket({ soThuTu: Number(stt), trangThai: 'dang_cho' });
+        } else {
+          // ensure we fetch the latest ticket if stt not provided
+          pollTicket(lichKhamId);
+        }
+        setStep(5);
+        // cleanup
+        sessionStorage.removeItem('momo_appt_id');
+        const url = new URL(window.location.href);
+        url.search = '';
+        window.history.replaceState({}, '', url.toString());
+      } else if(status === 'fail'){
+        // Move to step 5 to show waiting UI and try polling if we have id
+        if(lichKhamId){
+          setAppointment({ _id: lichKhamId });
+          setStep(5);
+          pollTicket(lichKhamId);
+        }
+        // cleanup URL
+        const url = new URL(window.location.href);
+        url.search = '';
+        window.history.replaceState({}, '', url.toString());
+      }
+    }catch{}
+  }, []);
 
   async function checkAvailability(){
     try{

@@ -370,13 +370,16 @@ router.post('/appointments/:id/momo', async (req, res, next) => {
     if(!appt) return res.status(404).json({ message: 'Không tìm thấy lịch khám' });
     if(appt.trangThai === 'da_thanh_toan') return res.status(400).json({ message: 'Đã thanh toán' });
 
-    // Config from env or defaults for local dev
-    const partnerCode = process.env.MOMO_PARTNER_CODE || 'MOMO';
-    const accessKey = process.env.MOMO_ACCESS_KEY || 'F8BBA842ECF85';
-    const secretKey = process.env.MOMO_SECRET_KEY || 'K951B6PE1waDMi640xX08PD3vg6EkVlz';
-    const endpoint = process.env.MOMO_ENDPOINT || 'https://test-payment.momo.vn/v2/gateway/api/create';
-    const redirectUrl = process.env.MOMO_RETURN_URL || 'http://localhost:5173/booking';
-    const ipnUrl = process.env.MOMO_IPN_URL || 'http://localhost:5000/api/booking/momo/ipn';
+  // Config from env or defaults for local dev
+  const partnerCode = process.env.MOMO_PARTNER_CODE || 'MOMO';
+  const accessKey = process.env.MOMO_ACCESS_KEY || 'F8BBA842ECF85';
+  const secretKey = process.env.MOMO_SECRET_KEY || 'K951B6PE1waDMi640xX08PD3vg6EkVlz';
+  const endpoint = process.env.MOMO_ENDPOINT || 'https://test-payment.momo.vn/v2/gateway/api/create';
+  // Build a backend callback URL by default so that status is updated immediately upon redirect
+  const baseUrl = process.env.SERVER_BASE_URL || `${req.protocol}://${req.get('host')}`;
+  const redirectUrl = process.env.MOMO_RETURN_URL || `${baseUrl}/api/booking/momo/return-get`;
+  // Note: When testing locally, MoMo IPN cannot reach your localhost. Keep this for production/public URLs.
+  const ipnUrl = process.env.MOMO_IPN_URL || `${baseUrl}/api/booking/momo/ipn`;
     const requestType = 'captureWallet';
     const orderType = 'momo_wallet'; // per MoMo v2 API spec
 
